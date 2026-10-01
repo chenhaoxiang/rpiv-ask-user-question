@@ -1,14 +1,5 @@
 # rpiv-ask-user-question
 
-> [!CAUTION]
-> ## This repository has moved to [`juicesharp/rpiv-mono`](https://github.com/juicesharp/rpiv-mono)
->
-> This package now lives at **[`packages/rpiv-ask-user-question`](https://github.com/juicesharp/rpiv-mono/tree/main/packages/rpiv-ask-user-question)** inside the monorepo.
->
-> - **npm:** still published as `@juicesharp/rpiv-ask-user-question` — no install change.
-> - **Issues / PRs:** open them on [`rpiv-mono`](https://github.com/juicesharp/rpiv-mono/issues).
-> - **This repo is read-only / archived.**
-
 Pi extension that registers the `ask_user_question` tool — a structured option
 selector (with free-text "Other" fallback) the model can use to ask you a
 clarifying question instead of guessing.
