@@ -1,5 +1,5 @@
 import { type ExtensionAPI, DynamicBorder, type Theme } from "@earendil-works/pi-coding-agent";
-import { Container, Spacer, Text, getKeybindings } from "@earendil-works/pi-tui";
+import { Container, Editor, Spacer, Text, getKeybindings } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import {
 	WrappingSelect,
@@ -24,9 +24,6 @@ const KEYBIND_UP = "tui.select.up";
 const KEYBIND_DOWN = "tui.select.down";
 const KEYBIND_CONFIRM = "tui.select.confirm";
 const KEYBIND_CANCEL = "tui.select.cancel";
-
-const BACKSPACE_CHARS = new Set(["\x7f", "\b"]);
-const ESC_SEQUENCE_PREFIX = "\x1b";
 
 interface QuestionOption {
 	label: string;
@@ -97,14 +94,36 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 					numberStartOffset: mainItems.length,
 					totalItemsForNumbering: totalCount,
 				});
+				const editor = new Editor(tui, {
+					borderColor: (s) => theme.fg("muted", s),
+					selectList: {
+						selectedPrefix: (s) => theme.fg("accent", s),
+						selectedText: (s) => theme.fg("accent", s),
+						description: (s) => theme.fg("muted", s),
+						scrollInfo: (s) => theme.fg("dim", s),
+						noMatch: (s) => theme.fg("warning", s),
+					},
+				});
+				// The outer questionnaire owns Enter/submit semantics. Keeping submit
+				// disabled lets this headless editor handle only text editing, including
+				// bracketed paste and cursor movement.
+				editor.disableSubmit = true;
 
 				let selectionIndex = 0;
+				const syncInputView = () => {
+					const cursor = editor.getCursor();
+					const lines = editor.getLines();
+					let cursorOffset = cursor.col;
+					for (let i = 0; i < cursor.line; i++) cursorOffset += (lines[i]?.length ?? 0) + 1;
+					mainList.setInputBuffer(editor.getText(), cursorOffset);
+				};
 				const applySelection = () => {
 					const isInMainList = selectionIndex < mainItems.length;
 					mainList.setFocused(isInMainList);
 					chatList.setFocused(!isInMainList);
 					if (isInMainList) {
 						mainList.setSelectedIndex(selectionIndex);
+						if (mainItems[selectionIndex]?.isOther) syncInputView();
 					} else {
 						chatList.setSelectedIndex(selectionIndex - mainItems.length);
 					}
@@ -122,14 +141,12 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 						const kb = getKeybindings();
 
 						if (kb.matches(data, KEYBIND_UP)) {
-							if (isInlineInputActive) mainList.clearInputBuffer();
 							selectionIndex = wrapIndex(selectionIndex - 1, totalCount);
 							applySelection();
 							tui.requestRender();
 							return;
 						}
 						if (kb.matches(data, KEYBIND_DOWN)) {
-							if (isInlineInputActive) mainList.clearInputBuffer();
 							selectionIndex = wrapIndex(selectionIndex + 1, totalCount);
 							applySelection();
 							tui.requestRender();
@@ -137,7 +154,7 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 						}
 						if (kb.matches(data, KEYBIND_CONFIRM)) {
 							if (isInlineInputActive) {
-								done({ label: mainList.getInputBuffer(), isOther: true });
+								done({ label: editor.getExpandedText?.() ?? editor.getText(), isOther: true });
 							} else if (currentItem) {
 								done(currentItem);
 							}
@@ -148,11 +165,8 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 							return;
 						}
 						if (isInlineInputActive) {
-							if (BACKSPACE_CHARS.has(data)) {
-								mainList.backspaceInput();
-							} else if (data && !data.startsWith(ESC_SEQUENCE_PREFIX)) {
-								mainList.appendInput(data);
-							}
+							editor.handleInput(data);
+							syncInputView();
 							tui.requestRender();
 						}
 					},

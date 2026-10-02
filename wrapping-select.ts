@@ -1,5 +1,6 @@
 import { visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 import type { Component } from "@earendil-works/pi-tui";
+import { renderInlineInputRow as renderInlineInput } from "./inline-input.js";
 
 export interface WrappingSelectItem {
 	label: string;
@@ -27,7 +28,6 @@ export class WrappingSelect implements Component {
 	private static readonly ACTIVE_POINTER = "❯ ";
 	private static readonly INACTIVE_POINTER = "  ";
 	private static readonly NUMBER_SEPARATOR = ". ";
-	private static readonly INPUT_CURSOR = "▌";
 	private static readonly MIN_CONTENT_WIDTH = 1;
 
 	private readonly items: readonly WrappingSelectItem[];
@@ -39,6 +39,7 @@ export class WrappingSelect implements Component {
 	private selectedIndex = 0;
 	private focused = true;
 	private inputBuffer = "";
+	private inputCursorOffset: number | undefined = undefined;
 
 	constructor(
 		items: readonly WrappingSelectItem[],
@@ -65,6 +66,15 @@ export class WrappingSelect implements Component {
 		return this.inputBuffer;
 	}
 
+	setInputBuffer(text: string, cursorOffset?: number): void {
+		this.inputBuffer = text;
+		this.inputCursorOffset = cursorOffset;
+	}
+
+	setInputCursorOffset(offset: number | undefined): void {
+		this.inputCursorOffset = offset;
+	}
+
 	appendInput(text: string): void {
 		const printable = this.stripControlChars(text);
 		if (printable) this.inputBuffer += printable;
@@ -77,6 +87,7 @@ export class WrappingSelect implements Component {
 
 	clearInputBuffer(): void {
 		this.inputBuffer = "";
+		this.inputCursorOffset = undefined;
 	}
 
 	/** Intentionally empty — input is routed at the container level. */
@@ -130,7 +141,7 @@ export class WrappingSelect implements Component {
 		const contentWidth = Math.max(WrappingSelect.MIN_CONTENT_WIDTH, width - visibleWidth(rowPrefix));
 
 		if (this.shouldRenderAsInlineInput(item, isActive)) {
-			return [this.renderInlineInputRow(rowPrefix)];
+			return this.renderInlineInputRow(rowPrefix, continuationPrefix, contentWidth);
 		}
 
 		return [
@@ -150,8 +161,15 @@ export class WrappingSelect implements Component {
 		return !!item.isOther && isActive;
 	}
 
-	private renderInlineInputRow(rowPrefix: string): string {
-		return this.theme.selectedText(`${rowPrefix}${this.inputBuffer}${WrappingSelect.INPUT_CURSOR}`);
+	private renderInlineInputRow(rowPrefix: string, continuationPrefix: string, contentWidth: number): string[] {
+		return renderInlineInput({
+			buffer: this.inputBuffer,
+			cursorOffset: this.inputCursorOffset,
+			rowPrefix,
+			continuationPrefix,
+			contentWidth,
+			selectedText: this.theme.selectedText,
+		});
 	}
 
 	private renderLabelBlock(
