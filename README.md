@@ -1,5 +1,7 @@
 # rpiv-ask-user-question — maintained fork
 
+English | [中文](README.zh-CN.md)
+
 A Pi extension that registers `ask_user_question`, a structured question tool for decisions that cannot be made safely from the current request alone.
 
 This repository is the maintained fork:
