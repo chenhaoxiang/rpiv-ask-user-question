@@ -1,18 +1,19 @@
 {
   "name": "@juicesharp/rpiv-ask-user-question",
-  "version": "0.1.6",
+  "version": "0.1.4-fork.1",
   "description": "Pi extension: lets the model ask you a clarifying question with structured options instead of guessing",
   "keywords": ["pi-package", "pi-extension", "rpiv"],
   "type": "module",
+  "files": ["index.ts", "ask-user-question.ts", "inline-input.ts", "wrapping-select.ts", "README.md", "README.zh-CN.md", "docs/releasing.md"],
   "license": "MIT",
   "author": "juicesharp",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/juicesharp/rpiv-ask-user-question.git"
+    "url": "git+https://github.com/chenhaoxiang/rpiv-ask-user-question.git"
   },
-  "homepage": "https://github.com/juicesharp/rpiv-ask-user-question#readme",
+  "homepage": "https://github.com/chenhaoxiang/rpiv-ask-user-question#readme",
   "bugs": {
-    "url": "https://github.com/juicesharp/rpiv-ask-user-question/issues"
+    "url": "https://github.com/chenhaoxiang/rpiv-ask-user-question/issues"
   },
   "publishConfig": {
     "access": "public"
