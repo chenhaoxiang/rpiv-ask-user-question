@@ -2,69 +2,72 @@
 
 [English](README.md) | 中文
 
-一个 Pi 扩展，提供 `ask_user_question` 结构化提问工具，用于当前请求不足以安全决策、不能靠猜测继续时向用户提问。
+Pi 的 `ask_user_question` 结构化提问扩展，用于请求信息不足、关键决定会影响实施范围或验收时向用户提供明确选项。维护仓：<https://github.com/chenhaoxiang/rpiv-ask-user-question>。
 
-维护 fork 仓库：
+## 发布版本与分支约定
 
-<https://github.com/chenhaoxiang/rpiv-ask-user-question>
+当前维护版本为 **0.1.4-fork.1**，基于社区 **0.1.4**。fork 版本统一使用 `<社区版本>-fork.<修订号>`，本地修订不冒充社区新版本。
+
+- `main`：我们的维护、整合与发布主线，保留 fork 修复。
+- `upstream-main`：仅镜像社区 `main`，不加入 fork 提交，也不作为安装来源。
+- 改动通过经过审核的 PR 合入 `main`；保留现有分支和历史。
+
+固定版本安装：
+
+```bash
+pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.1
+```
+
+[GitHub Releases](https://github.com/chenhaoxiang/rpiv-ask-user-question/releases) 提供可安装的包、来源清单和 `SHA256SUMS` 校验文件；这不是向上游作者的 npm 命名空间发布。发布及制品安装流程见[维护说明](docs/releasing.md)。
+
+原先未区分社区/fork 的包版本 `0.1.6`，按真实社区基线规范为 `0.1.4-fork.1`。这是命名归一，不回退自由文本编辑或宿主 import 修复。
 
 ## 安装本 fork
+
+需要跟踪维护主线时：
 
 ```bash
 pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@main
 ```
 
-需要可复现安装时，可固定审核过的提交：
-
-```bash
-pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@<reviewed-commit>
-```
-
-安装后重启 Pi 或执行 `/reload`。
+上游 npm 包与本 fork 是不同来源；固定版本安装见上文。安装后重启或 `/reload`。
 
 ## 工具行为
 
-扩展注册一个工具：
-
 ```ts
 ask_user_question({
-  question: "Which implementation should we keep?",
-  header: "Implementation",
+  question: "保留哪种实现？",
+  header: "实现方案",
   options: [
-    { label: "Small patch", description: "Keep the existing architecture." },
-    { label: "Refactor", description: "Move the behavior into a shared module." }
+    { label: "小补丁", description: "保留现有架构" },
+    { label: "重构", description: "把行为迁入共享模块" }
   ],
   multiSelect: false
 })
 ```
 
-工具会在 TUI 中展示结构化选项。用户可以选择一个或多个选项，也可以使用 `Other` 输入自由文本；工具返回结构化选择结果，便于模型继续执行而不是猜测用户意图。
+界面提供可选择的选项及说明、带可编辑行内文本的 **Other**、不强迫归类选择的 **Chat about this**，并支持键盘导航、光标移动、多行输入、bracketed paste 与取消。结构化结果保留原问题、选择、自由回答或继续对话标记。
 
-## 适用场景
+返回结果分别表达：已选选项、自由文本回答（包括明确的 `(no input)`）、希望继续讨论、用户拒绝、非交互模式 UI 不可用、选项列表为空。
 
-- 需求存在多个合理实现路径；
-- 需要用户确认范围、优先级或兼容性；
-- 继续操作会改变产品契约、文件范围或验收标准；
-- 缺少一个关键决定，无法诚实地宣称已完成。
+## 何时使用
 
-不应把它用作普通聊天问题，也不应用它绕过项目、平台或安全规则。
+只有缺少具体决定且会影响实施、范围、外部契约或验收时才提问；可安全自行决定的低风险、可回退细节，不应反复让用户确认。结构化选项比要求用户输入散乱回答更易保留决策上下文。提问工具不能绕过项目或平台安全边界。
 
-## 兼容性与边界
+## 兼容性与限制
 
-- 这是 Pi 扩展，不会修改 Pi 核心；
-- 选项和回答只在当前提问流程中使用，不替用户持久化业务决策；
-- `multiSelect` 控制是否允许多选；
-- 始终提供 `Other` 自由文本入口；
-- 用户取消或关闭提示时，调用会返回取消/未回答状态，由模型决定下一步是否需要再次提问。
+- 只使用 Pi 公共 API 和宿主提供的 `@earendil-works/pi-coding-agent`、`@earendil-works/pi-tui`、`typebox`；
+- 选择器需要交互式 UI；print/RPC 无 UI 时明确返回不可用，不猜测答案；
+- 不写全局配置、凭据、提示词或 Pi 正常工具结果机制之外的会话文件；
+- `multiSelect` 保留在公开 schema 中以维持工具协议，但不应仅凭该字段声称已实现多选界面。选项与自由输入使用同一个提问对话框。
 
-## 开发
+## 开发与验证
 
 ```bash
-npm install
-npm test
+npm install --ignore-scripts
 ```
 
-测试使用合成选项和本地 UI fixture，不需要 provider 凭据，也不读取私人会话内容。
+当前没有自动化功能测试脚本。发布检查覆盖运行文件、打包内容及不调用模型的隔离 RPC 加载；真实交互选择器与自定义回答路径仍需手工 UI 验证。不要运行不存在的 `npm test`，也不要用生产凭据或私人会话作为 fixture。
 
 ## 许可证
 

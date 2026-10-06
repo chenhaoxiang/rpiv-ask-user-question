@@ -8,6 +8,24 @@ This repository is the maintained fork:
 
 <https://github.com/chenhaoxiang/rpiv-ask-user-question>
 
+## Releases and branch policy
+
+The maintained release is **0.1.4-fork.1**, based on community **0.1.4**. Fork releases use `<community-version>-fork.<revision>`; the fork revision increases without pretending to be a new upstream release.
+
+- `main`: our maintained integration and release branch, including fork fixes.
+- `upstream-main`: an exact mirror of the community's `main`, with no fork commits. Never install from this branch.
+- Changes enter `main` through reviewed pull requests; existing branches and history are retained.
+
+Install a reproducible release:
+
+```bash
+pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.1
+```
+
+[GitHub Releases](https://github.com/chenhaoxiang/rpiv-ask-user-question/releases) include the installable package tarball, a provenance manifest, and `SHA256SUMS`. These GitHub releases are not npm publications under the upstream author's namespace. See [release maintenance](docs/releasing.md) for asset installation and future releases.
+
+The previously unqualified fork package version `0.1.6` is standardized as `0.1.4-fork.1` using its real community base. This is a naming correction, not a rollback of custom-answer or host-import fixes.
+
 ## Install this fork
 
 ```bash
@@ -70,7 +88,7 @@ Do not use it for choices that can be made safely as a reversible implementation
 
 ## Development
 
-The package is intentionally small and loads TypeScript directly through Pi's package loader. Use a disposable Pi configuration directory for local checks:
+The package currently has no automated functional test script. Release verification inspects package/runtime resources and loads the artifact through isolated Pi RPC without prompts; actual interactive selector behavior still requires a manual UI check. The package loads TypeScript directly through Pi's package loader. Use a disposable Pi configuration directory for local checks:
 
 ```bash
 npm install --ignore-scripts
