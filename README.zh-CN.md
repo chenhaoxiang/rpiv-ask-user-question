@@ -6,7 +6,7 @@ Pi 的 `ask_user_question` 结构化提问扩展，用于请求信息不足、�
 
 ## 发布版本与分支约定
 
-当前维护版本为 **0.1.4-fork.1**，基于社区 **0.1.4**。fork 版本统一使用 `<社区版本>-fork.<修订号>`，本地修订不冒充社区新版本。
+当前维护版本为 **0.1.4-fork.2**，基于社区 **0.1.4**。fork 版本统一使用 `<社区版本>-fork.<修订号>`，本地修订不冒充社区新版本。
 
 - `main`：我们的维护、整合与发布主线，保留 fork 修复。
 - `upstream-main`：仅镜像社区 `main`，不加入 fork 提交，也不作为安装来源。
@@ -15,7 +15,7 @@ Pi 的 `ask_user_question` 结构化提问扩展，用于请求信息不足、�
 固定版本安装：
 
 ```bash
-pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.1
+pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.2
 ```
 
 [GitHub Releases](https://github.com/chenhaoxiang/rpiv-ask-user-question/releases) 提供可安装的包、来源清单和 `SHA256SUMS` 校验文件；这不是向上游作者的 npm 命名空间发布。发布及制品安装流程见[维护说明](docs/releasing.md)。
@@ -59,7 +59,7 @@ ask_user_question({
 - 只使用 Pi 公共 API 和宿主提供的 `@earendil-works/pi-coding-agent`、`@earendil-works/pi-tui`、`typebox`；
 - 选择器需要交互式 UI；print/RPC 无 UI 时明确返回不可用，不猜测答案；
 - 不写全局配置、凭据、提示词或 Pi 正常工具结果机制之外的会话文件；
-- `multiSelect` 保留在公开 schema 中以维持工具协议，但不应仅凭该字段声称已实现多选界面。选项与自由输入使用同一个提问对话框。
+- `multiSelect: true` 提供真正的多选：空格勾选/取消，Enter 按原顺序提交，未勾选时继续等待。Other 和 Chat 是独立替代答案，不与勾选混合。
 
 ## 开发与验证
 
@@ -67,7 +67,7 @@ ask_user_question({
 npm install --ignore-scripts
 ```
 
-当前没有自动化功能测试脚本。发布检查覆盖运行文件、打包内容及不调用模型的隔离 RPC 加载；真实交互选择器与自定义回答路径仍需手工 UI 验证。不要运行不存在的 `npm test`，也不要用生产凭据或私人会话作为 fixture。
+在 Node24 或更高版本运行 `npm test`，用合成宿主和真实 Pi TUI 组件验证单选、多选、自由输入、中止及窄屏显示。发布还需打包及隔离加载检查；实际终端与输入法体验需人工验真。多选保留文本 `answer`，另返回 `answers`、`selectedIndices` 和 `multiSelect`；详见[多选合同](docs/multiselect.md)。不使用生产凭据或私人会话作为测试数据。
 
 ## 许可证
 

@@ -1,4 +1,4 @@
-import { visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
+import { visibleWidth, wrapTextWithAnsi, truncateToWidth } from "@earendil-works/pi-tui";
 import type { Component } from "@earendil-works/pi-tui";
 import { renderInlineInputRow as renderInlineInput } from "./inline-input.js";
 
@@ -37,6 +37,11 @@ export class WrappingSelect implements Component {
 	private readonly totalItemsForNumbering: number;
 
 	private selectedIndex = 0;
+	private checkedIndices: ReadonlySet<number> | undefined;
+
+	setCheckedIndices(indices: ReadonlySet<number>): void {
+		this.checkedIndices = new Set(indices);
+	}
 	private focused = true;
 	private inputBuffer = "";
 	private inputCursorOffset: number | undefined = undefined;
@@ -112,7 +117,7 @@ export class WrappingSelect implements Component {
 		if (this.hasItemsOutsideWindow(startIndex, endIndex)) {
 			lines.push(this.theme.scrollInfo(`  (${this.selectedIndex + 1}/${this.items.length})`));
 		}
-		return lines;
+		return lines.map(line => truncateToWidth(line, Math.max(0, width)));
 	}
 
 	private computeVisibleWindow(): { startIndex: number; endIndex: number } {
@@ -154,7 +159,10 @@ export class WrappingSelect implements Component {
 		const pointer = isActive ? WrappingSelect.ACTIVE_POINTER : WrappingSelect.INACTIVE_POINTER;
 		const displayNumber = this.numberStartOffset + index + 1;
 		const paddedNumber = String(displayNumber).padStart(numberWidth, " ");
-		return `${pointer}${paddedNumber}${WrappingSelect.NUMBER_SEPARATOR}`;
+		const item = this.items[index];
+		const checkbox = this.checkedIndices && !item?.isOther && !item?.isChat
+			? (this.checkedIndices.has(index) ? "[x] " : "[ ] ") : "";
+		return `${pointer}${paddedNumber}${WrappingSelect.NUMBER_SEPARATOR}${checkbox}`;
 	}
 
 	private shouldRenderAsInlineInput(item: WrappingSelectItem, isActive: boolean): boolean {
