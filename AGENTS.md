@@ -9,6 +9,8 @@ Maintained standalone fork of juicesharp/rpiv-ask-user-question. Use isolated wo
 
 ## Documentation map
 
+- `docs/concurrent-questions.md`: host sequential metadata, explicit per-registration concurrent-call rejection and answer/cancel/abort/UI-failure cleanup regression.
+
 - `docs/maintenance/2026-10-14-optimization-installed.md`: 0.1.4-fork.2 exact-source normal merge, CI, fresh-download checksums, installed bytes, combined loader and rollback/activation boundaries.
 
 - `docs/multiselect.md`: checkbox interaction, exclusive Other/Chat, compatible result fields, abort cleanup and synthetic regression scope.

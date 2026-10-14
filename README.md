@@ -10,7 +10,7 @@ This repository is the maintained fork:
 
 ## Releases and branch policy
 
-The maintained release is **0.1.4-fork.2**, based on community **0.1.4**. Fork releases use `<community-version>-fork.<revision>`; the fork revision increases without pretending to be a new upstream release.
+The maintained release is **0.1.4-fork.3**, based on community **0.1.4**. Fork releases use `<community-version>-fork.<revision>`; the fork revision increases without pretending to be a new upstream release.
 
 - `main`: our maintained integration and release branch, including fork fixes.
 - `upstream-main`: an exact mirror of the community's `main`, with no fork commits. Never install from this branch.
@@ -19,7 +19,7 @@ The maintained release is **0.1.4-fork.2**, based on community **0.1.4**. Fork r
 Install a reproducible release:
 
 ```bash
-pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.2
+pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.3
 ```
 
 [GitHub Releases](https://github.com/chenhaoxiang/rpiv-ask-user-question/releases) include the installable package tarball, a provenance manifest, and `SHA256SUMS`. These GitHub releases are not npm publications under the upstream author's namespace. See [release maintenance](docs/releasing.md) for asset installation and future releases.
@@ -85,6 +85,10 @@ Do not use it for choices that can be made safely as a reversible implementation
 - Requires an interactive Pi UI for the selector. Non-interactive print/RPC use returns an explicit UI-unavailable result instead of guessing.
 - The extension does not write settings, credentials, prompts, or session files outside Pi's normal tool-result/session mechanism.
 - `multiSelect: true` enables checkboxes: Space toggles and Enter submits checked options in original order; Other/Chat are exclusive alternatives. Results add `answers`, `selectedIndices`, `multiSelect` while preserving textual `answer`.
+
+## Concurrent calls
+
+The tool requests sequential host execution. Unsupported direct/nested concurrent calls explicitly fail rather than replacing an active question. Answer, cancel, abort and UI errors release the guard; see [concurrency contract](docs/concurrent-questions.md).
 
 ## Development
 

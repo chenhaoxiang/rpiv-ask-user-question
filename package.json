@@ -1,6 +1,6 @@
 {
   "name": "@juicesharp/rpiv-ask-user-question",
-  "version": "0.1.4-fork.2",
+  "version": "0.1.4-fork.3",
   "description": "Pi extension: lets the model ask you a clarifying question with structured options instead of guessing",
   "keywords": [
     "pi-package",
@@ -16,7 +16,8 @@
     "README.md",
     "README.zh-CN.md",
     "docs/releasing.md",
-    "docs/multiselect.md"
+    "docs/multiselect.md",
+    "docs/concurrent-questions.md"
   ],
   "license": "MIT",
   "author": "juicesharp",

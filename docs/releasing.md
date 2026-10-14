@@ -22,7 +22,7 @@ Applies only to chenhaoxiang/rpiv-ask-user-question. The community project remai
 
 ## Retained community baseline
 
-The current maintained version is **0.1.4-fork.2**; its bounded feature changes and validation contract are in [the feature guide](multiselect.md). The previous release facts below describe the retained community base, not the new feature's installed acceptance.
+The current maintained version is **0.1.4-fork.3**; its retained multi-select behavior is in [the feature guide](multiselect.md), and the current serialization fix is in [concurrency contract](concurrent-questions.md). The previous release facts below describe the retained community base, not the new feature's installed acceptance.
 
 Version **0.1.4-fork.1** uses the real standalone community base 0.1.4. Earlier local fork metadata said 0.1.6 without a fork qualifier; the numeric normalization does not revert editable custom answers, exact tool identity or host-provided Pi/typebox imports. Current community main is an ancestor. Source behavior is unchanged.
 
