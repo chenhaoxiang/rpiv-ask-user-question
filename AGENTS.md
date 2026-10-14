@@ -9,6 +9,8 @@ Maintained standalone fork of juicesharp/rpiv-ask-user-question. Use isolated wo
 
 ## Documentation map
 
+- `docs/question-error-flags.md`: genuine UI/options failures return structured errors; user decline, custom input, Chat and abort remain normal outcomes.
+
 - `docs/maintenance/2026-10-14-audited-bugfix-installed.md`: 0.1.4-fork.3 red/green defect closure, exact-review-before-merge, main CI, schema1 original Release, installed bytes/native synthetic recheck and activation limits.
 
 - `docs/concurrent-questions.md`: host sequential metadata, explicit per-registration concurrent-call rejection and answer/cancel/abort/UI-failure cleanup regression.

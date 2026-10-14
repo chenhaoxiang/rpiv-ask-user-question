@@ -6,7 +6,7 @@ Pi 的 `ask_user_question` 结构化提问扩展，用于请求信息不足、�
 
 ## 发布版本与分支约定
 
-当前维护版本为 **0.1.4-fork.3**，基于社区 **0.1.4**。fork 版本统一使用 `<社区版本>-fork.<修订号>`，本地修订不冒充社区新版本。
+当前维护版本为 **0.1.4-fork.4**，基于社区 **0.1.4**。fork 版本统一使用 `<社区版本>-fork.<修订号>`，本地修订不冒充社区新版本。
 
 - `main`：我们的维护、整合与发布主线，保留 fork 修复。
 - `upstream-main`：仅镜像社区 `main`，不加入 fork 提交，也不作为安装来源。
@@ -15,7 +15,7 @@ Pi 的 `ask_user_question` 结构化提问扩展，用于请求信息不足、�
 固定版本安装：
 
 ```bash
-pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.3
+pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.4
 ```
 
 [GitHub Releases](https://github.com/chenhaoxiang/rpiv-ask-user-question/releases) 提供可安装的包、来源清单和 `SHA256SUMS` 校验文件；这不是向上游作者的 npm 命名空间发布。发布及制品安装流程见[维护说明](docs/releasing.md)。
@@ -49,6 +49,8 @@ ask_user_question({
 界面提供可选择的选项及说明、带可编辑行内文本的 **Other**、不强迫归类选择的 **Chat about this**，并支持键盘导航、光标移动、多行输入、bracketed paste 与取消。结构化结果保留原问题、选择、自由回答或继续对话标记。
 
 返回结果分别表达：已选选项、自由文本回答（包括明确的 `(no input)`）、希望继续讨论、用户拒绝、非交互模式 UI 不可用、选项列表为空。
+
+UI 不可用和选项为空返回 `isError: true`，供宿主正确识别失败；选择、自由输入、继续讨论、拒绝和取消仍是正常结果。见[错误结果合同](docs/question-error-flags.md)。
 
 ## 何时使用
 

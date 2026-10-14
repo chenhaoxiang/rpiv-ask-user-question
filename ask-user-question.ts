@@ -78,8 +78,8 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 			if (signal?.aborted) return buildToolResult("Question cancelled", { question: params.question, answer: null });
-			if (!ctx.hasUI || ctx.mode !== "tui") return buildToolResult(ERROR_NO_UI, { question: params.question, answer: null });
-			if (params.options.length === 0) return buildToolResult(ERROR_NO_OPTIONS, { question: params.question, answer: null });
+			if (!ctx.hasUI || ctx.mode !== "tui") return { ...buildToolResult(ERROR_NO_UI, { question: params.question, answer: null }), isError: true };
+			if (params.options.length === 0) return { ...buildToolResult(ERROR_NO_OPTIONS, { question: params.question, answer: null }), isError: true };
 			if (awaitingAnswer) throw new Error("A question is already awaiting an answer; concurrent calls are not supported.");
 			awaitingAnswer = true;
 			try {
