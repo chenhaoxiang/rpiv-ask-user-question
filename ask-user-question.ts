@@ -48,12 +48,14 @@ interface ToolDetails {
 }
 
 export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
+	let awaitingAnswer = false;
 	const OptionSchema = Type.Object({
 		label: Type.String({ description: "Display label for the option" }),
 		description: Type.Optional(Type.String({ description: "Optional description shown below label" })),
 	});
 
 	pi.registerTool({
+		executionMode: "sequential",
 		name: "ask_user_question",
 		label: "Ask User Question",
 		description:
@@ -78,6 +80,9 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 			if (signal?.aborted) return buildToolResult("Question cancelled", { question: params.question, answer: null });
 			if (!ctx.hasUI || ctx.mode !== "tui") return buildToolResult(ERROR_NO_UI, { question: params.question, answer: null });
 			if (params.options.length === 0) return buildToolResult(ERROR_NO_OPTIONS, { question: params.question, answer: null });
+			if (awaitingAnswer) throw new Error("A question is already awaiting an answer; concurrent calls are not supported.");
+			awaitingAnswer = true;
+			try {
 
 			const mainItems = buildMainItems(params.options);
 			const chatItems: WrappingSelectItem[] = [{ label: CHAT_ABOUT_THIS_LABEL, isChat: true }];
@@ -210,6 +215,7 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 
 			if (signal?.aborted) return buildToolResult("Question cancelled", { question: params.question, answer: null });
 			return buildResponse(choice, params);
+			} finally { awaitingAnswer = false; }
 		},
 	});
 }
