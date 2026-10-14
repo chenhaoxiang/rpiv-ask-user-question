@@ -10,7 +10,7 @@ This repository is the maintained fork:
 
 ## Releases and branch policy
 
-The maintained release is **0.1.4-fork.3**, based on community **0.1.4**. Fork releases use `<community-version>-fork.<revision>`; the fork revision increases without pretending to be a new upstream release.
+The maintained release is **0.1.4-fork.4**, based on community **0.1.4**. Fork releases use `<community-version>-fork.<revision>`; the fork revision increases without pretending to be a new upstream release.
 
 - `main`: our maintained integration and release branch, including fork fixes.
 - `upstream-main`: an exact mirror of the community's `main`, with no fork commits. Never install from this branch.
@@ -19,7 +19,7 @@ The maintained release is **0.1.4-fork.3**, based on community **0.1.4**. Fork r
 Install a reproducible release:
 
 ```bash
-pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.3
+pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.4
 ```
 
 [GitHub Releases](https://github.com/chenhaoxiang/rpiv-ask-user-question/releases) include the installable package tarball, a provenance manifest, and `SHA256SUMS`. These GitHub releases are not npm publications under the upstream author's namespace. See [release maintenance](docs/releasing.md) for asset installation and future releases.
@@ -72,6 +72,8 @@ The tool returns a clear result for each outcome:
 - user decline;
 - unavailable UI in non-interactive mode;
 - invalid empty option list.
+
+Unavailable UI and empty options return `isError: true`; selection, custom input, Chat, decline and cancellation remain normal outcomes. See [error-result contract](docs/question-error-flags.md).
 
 ## When to use it
 
