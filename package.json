@@ -1,10 +1,23 @@
 {
   "name": "@juicesharp/rpiv-ask-user-question",
-  "version": "0.1.4-fork.1",
+  "version": "0.1.4-fork.2",
   "description": "Pi extension: lets the model ask you a clarifying question with structured options instead of guessing",
-  "keywords": ["pi-package", "pi-extension", "rpiv"],
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "rpiv"
+  ],
   "type": "module",
-  "files": ["index.ts", "ask-user-question.ts", "inline-input.ts", "wrapping-select.ts", "README.md", "README.zh-CN.md", "docs/releasing.md"],
+  "files": [
+    "index.ts",
+    "ask-user-question.ts",
+    "inline-input.ts",
+    "wrapping-select.ts",
+    "README.md",
+    "README.zh-CN.md",
+    "docs/releasing.md",
+    "docs/multiselect.md"
+  ],
   "license": "MIT",
   "author": "juicesharp",
   "repository": {
@@ -18,12 +31,19 @@
   "publishConfig": {
     "access": "public"
   },
+  "scripts": { "test": "node --no-warnings --experimental-vm-modules --test test/*.test.mjs" },
   "pi": {
-    "extensions": ["./index.ts"]
+    "extensions": [
+      "./index.ts"
+    ]
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",
     "@earendil-works/pi-tui": "*",
     "typebox": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-tui": "1.2.0",
+    "typebox": "1.3.27"
   }
 }

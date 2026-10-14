@@ -10,7 +10,7 @@ This repository is the maintained fork:
 
 ## Releases and branch policy
 
-The maintained release is **0.1.4-fork.1**, based on community **0.1.4**. Fork releases use `<community-version>-fork.<revision>`; the fork revision increases without pretending to be a new upstream release.
+The maintained release is **0.1.4-fork.2**, based on community **0.1.4**. Fork releases use `<community-version>-fork.<revision>`; the fork revision increases without pretending to be a new upstream release.
 
 - `main`: our maintained integration and release branch, including fork fixes.
 - `upstream-main`: an exact mirror of the community's `main`, with no fork commits. Never install from this branch.
@@ -19,7 +19,7 @@ The maintained release is **0.1.4-fork.1**, based on community **0.1.4**. Fork r
 Install a reproducible release:
 
 ```bash
-pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.1
+pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.2
 ```
 
 [GitHub Releases](https://github.com/chenhaoxiang/rpiv-ask-user-question/releases) include the installable package tarball, a provenance manifest, and `SHA256SUMS`. These GitHub releases are not npm publications under the upstream author's namespace. See [release maintenance](docs/releasing.md) for asset installation and future releases.
@@ -84,11 +84,11 @@ Do not use it for choices that can be made safely as a reversible implementation
 - Uses Pi's public extension APIs and host-provided `@earendil-works/pi-coding-agent`, `@earendil-works/pi-tui`, and `typebox` packages.
 - Requires an interactive Pi UI for the selector. Non-interactive print/RPC use returns an explicit UI-unavailable result instead of guessing.
 - The extension does not write settings, credentials, prompts, or session files outside Pi's normal tool-result/session mechanism.
-- The `multiSelect` field remains part of the public schema for Claude-Code parity; option selection and custom text stay visible in the same question dialog.
+- `multiSelect: true` enables checkboxes: Space toggles and Enter submits checked options in original order; Other/Chat are exclusive alternatives. Results add `answers`, `selectedIndices`, `multiSelect` while preserving textual `answer`.
 
 ## Development
 
-The package currently has no automated functional test script. Release verification inspects package/runtime resources and loads the artifact through isolated Pi RPC without prompts; actual interactive selector behavior still requires a manual UI check. The package loads TypeScript directly through Pi's package loader. Use a disposable Pi configuration directory for local checks:
+Run `npm test` on Node24+ for synthetic host/dialog tests with actual pinned Pi TUI primitives. Existing single-choice characterization remains unchanged. Package loading, live terminal/IME acceptance and model requests are separate; see [multi-selection contract](docs/multiselect.md). Use a disposable Pi directory for local checks:
 
 ```bash
 npm install --ignore-scripts

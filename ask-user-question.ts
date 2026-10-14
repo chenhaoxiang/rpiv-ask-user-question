@@ -1,5 +1,5 @@
 import { type ExtensionAPI, DynamicBorder, type Theme } from "@earendil-works/pi-coding-agent";
-import { Container, Editor, Spacer, Text, getKeybindings } from "@earendil-works/pi-tui";
+import { Container, Editor, Spacer, Text, getKeybindings, matchesKey } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import {
 	WrappingSelect,
@@ -34,6 +34,7 @@ interface QuestionParams {
 	question: string;
 	header?: string;
 	options: QuestionOption[];
+	multiSelect?: boolean;
 }
 
 interface ToolDetails {
@@ -41,6 +42,9 @@ interface ToolDetails {
 	answer: string | null;
 	wasCustom?: boolean;
 	wasChat?: boolean;
+	answers?: string[];
+	selectedIndices?: number[];
+	multiSelect?: boolean;
 }
 
 export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
@@ -59,6 +63,7 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 			"Use the ask_user_question tool whenever the user's request is underspecified and you cannot proceed without a concrete decision.",
 			"Prefer ask_user_question over prose 'please tell me X' — the structured selector gives the user concrete options and records their choice in session history.",
 			"This replaces the AskUserQuestion tool from Claude Code. The user can always pick 'Other (type your own answer)' for free-text input.",
+			"Set multiSelect: true when several options may apply simultaneously; Other and Chat are exclusive alternative answers.",
 		],
 		parameters: Type.Object({
 			question: Type.String({ description: "The question to ask the user" }),
@@ -69,15 +74,30 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 			),
 		}),
 
-		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-			if (!ctx.hasUI) return buildToolResult(ERROR_NO_UI, { question: params.question, answer: null });
+		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
+			if (signal?.aborted) return buildToolResult("Question cancelled", { question: params.question, answer: null });
+			if (!ctx.hasUI || ctx.mode !== "tui") return buildToolResult(ERROR_NO_UI, { question: params.question, answer: null });
 			if (params.options.length === 0) return buildToolResult(ERROR_NO_OPTIONS, { question: params.question, answer: null });
 
 			const mainItems = buildMainItems(params.options);
 			const chatItems: WrappingSelectItem[] = [{ label: CHAT_ABOUT_THIS_LABEL, isChat: true }];
 			const totalCount = mainItems.length + chatItems.length;
 
-			const choice = await ctx.ui.custom<WrappingSelectItem | null>((tui, theme, _kb, done) => {
+			let removeAbort = () => {};
+			let choice: (WrappingSelectItem & { selectedIndices?: number[] }) | null;
+			try {
+			choice = await ctx.ui.custom<WrappingSelectItem & { selectedIndices?: number[] } | null>((tui, theme, _kb, done) => {
+				let finished = false;
+				const finish = (value: (WrappingSelectItem & { selectedIndices?: number[] }) | null) => {
+					if (finished) return;
+					finished = true;
+					done(value);
+				};
+				const abort = () => finish(null);
+				signal?.addEventListener("abort", abort, { once: true });
+				removeAbort = () => signal?.removeEventListener("abort", abort);
+				if (signal?.aborted) abort();
+				const checked = new Set<number>();
 				const selectTheme: WrappingSelectTheme = {
 					selectedText: (t) => theme.fg("accent", theme.bold(t)),
 					description: (t) => theme.fg("muted", t),
@@ -131,11 +151,13 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 				applySelection();
 
 				const container = buildDialogContainer(theme, params, mainList, chatList);
+				if (params.multiSelect) mainList.setCheckedIndices(checked);
 
 				return {
 					render: (w) => container.render(w),
 					invalidate: () => container.invalidate(),
 					handleInput: (data) => {
+						if (finished) return;
 						const currentItem = itemAt(selectionIndex, mainItems, chatItems);
 						const isInlineInputActive = !!currentItem?.isOther;
 						const kb = getKeybindings();
@@ -152,16 +174,28 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 							tui.requestRender();
 							return;
 						}
+						if (params.multiSelect && !isInlineInputActive && selectionIndex < params.options.length && matchesKey(data, "space")) {
+							if (checked.has(selectionIndex)) checked.delete(selectionIndex); else checked.add(selectionIndex);
+							mainList.setCheckedIndices(checked);
+							tui.requestRender();
+							return;
+						}
 						if (kb.matches(data, KEYBIND_CONFIRM)) {
 							if (isInlineInputActive) {
-								done({ label: editor.getExpandedText?.() ?? editor.getText(), isOther: true });
+								finish({ label: editor.getExpandedText?.() ?? editor.getText(), isOther: true });
+							} else if (currentItem?.isChat) {
+								finish(currentItem);
+							} else if (params.multiSelect) {
+								if (!checked.size) { ctx.ui.notify("Select at least one option with Space, or choose a custom answer or chat.", "warning"); return; }
+								const selectedIndices = [...checked].sort((a, b) => a - b);
+								finish({ label: selectedIndices.map(i => params.options[i].label).join("\n"), selectedIndices });
 							} else if (currentItem) {
-								done(currentItem);
+								finish(currentItem);
 							}
 							return;
 						}
 						if (kb.matches(data, KEYBIND_CANCEL)) {
-							done(null);
+							finish(null);
 							return;
 						}
 						if (isInlineInputActive) {
@@ -172,7 +206,9 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 					},
 				};
 			});
+			} finally { removeAbort(); }
 
+			if (signal?.aborted) return buildToolResult("Question cancelled", { question: params.question, answer: null });
 			return buildResponse(choice, params);
 		},
 	});
@@ -219,11 +255,11 @@ function buildDialogContainer(
 	container.addChild(border());
 	container.addChild(chatList);
 	container.addChild(new Spacer(1));
-	container.addChild(new Text(theme.fg("dim", NAV_HINT), 1, 0));
+	container.addChild(new Text(theme.fg("dim", params.multiSelect ? "Space to toggle · Enter to submit checked options · ↑/↓ to navigate · Esc to cancel · Other/Chat are exclusive" : NAV_HINT), 1, 0));
 	return container;
 }
 
-function buildResponse(choice: WrappingSelectItem | null, params: QuestionParams) {
+function buildResponse(choice: (WrappingSelectItem & { selectedIndices?: number[] }) | null, params: QuestionParams) {
 	if (!choice) {
 		return buildToolResult(DECLINE_MESSAGE, { question: params.question, answer: null });
 	}
@@ -239,6 +275,13 @@ function buildResponse(choice: WrappingSelectItem | null, params: QuestionParams
 			question: params.question,
 			answer: CHAT_ANSWER_TAG,
 			wasChat: true,
+		});
+	}
+	if (choice.selectedIndices) {
+		const answers = choice.selectedIndices.map(i => params.options[i].label);
+		return buildToolResult(`User selected multiple options:\n${answers.map(x => `- ${x}`).join("\n")}`, {
+			question: params.question, answer: choice.label, answers,
+			selectedIndices: choice.selectedIndices, multiSelect: true, wasCustom: false,
 		});
 	}
 	return buildToolResult(`User selected: ${choice.label}`, {
