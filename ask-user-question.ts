@@ -63,6 +63,7 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 			"Use the ask_user_question tool whenever the user's request is underspecified and you cannot proceed without a concrete decision.",
 			"Prefer ask_user_question over prose 'please tell me X' — the structured selector gives the user concrete options and records their choice in session history.",
 			"This replaces the AskUserQuestion tool from Claude Code. The user can always pick 'Other (type your own answer)' for free-text input.",
+			"Set multiSelect: true when several options may apply simultaneously; Other and Chat are exclusive alternative answers.",
 		],
 		parameters: Type.Object({
 			question: Type.String({ description: "The question to ask the user" }),
@@ -207,6 +208,7 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 			});
 			} finally { removeAbort(); }
 
+			if (signal?.aborted) return buildToolResult("Question cancelled", { question: params.question, answer: null });
 			return buildResponse(choice, params);
 		},
 	});
