@@ -33,7 +33,7 @@ Version **0.1.4-fork.1** uses the real standalone community base 0.1.4. Earlier 
 3. Run `npm test` (Node24+, actual pinned TUI primitives/synthetic host), retaining all characterization assertions. Inspect runtime files and validate the actual tarball by isolated current-Pi RPC loading with no prompts. Manual terminal/IME acceptance remains distinct from synthetic dialog tests and package loading. Review the exact diff and CI.
 4. Merge the PR normally, then verify the remote main contains the validated head.
 5. At that exact main commit, run `npm pack --ignore-scripts --pack-destination tmp/release`. Inspect/extract the tarball and smoke-load it in an isolated Pi agent directory without model requests.
-6. Write `release-manifest.json` with repository, version, exact source commit, community base, mirror tip, package filename and SHA-256. Generate `SHA256SUMS` for both the tarball and manifest. Required fields and canonical forms are specified below in Manifest consumer contract: schemaVersion: 1, canonical repository URL, version, tag, sourceCommit, package and packageSha256.
+6. Write `release-manifest.json` with repository, version, exact source commit, community base, mirror tip, package filename and SHA-256. Generate `SHA256SUMS` from inside `tmp/release`, using flat asset filenames for the tarball and manifest; verify it again from a different download directory. Required fields and canonical forms are specified below in Manifest consumer contract: schemaVersion: 1, canonical repository URL, version, tag, sourceCommit, package and packageSha256.
 7. Create a GitHub Release with `gh release create v<version> --target <exact-main-sha> --latest`, attaching the tarball, manifest and checksums. Never run `npm publish` against the upstream author's package.
 8. Download the published assets afresh, verify `shasum -a 256 -c SHA256SUMS`, and smoke-load the downloaded package. Record the PR, tests and installation limitations in release notes.
 
@@ -43,7 +43,7 @@ The original 0.1.4-fork.5 `SHA256SUMS` contains build-relative paths and is reta
 
 ## Installation
 
-Prefer the pinned git command in README. For offline/artifact installs, download the three release assets into a temporary directory, verify the checksums, then extract the package into a permanent user-owned package directory and run `pi install /absolute/path/to/package`. Do not leave an active install under a temporary release directory. Restart Pi or use `/reload` after installation; disk changes do not hot-reload existing sessions.
+Prefer the pinned git command in README. For offline/artifact installs, download the complete asset set for the selected Release (four assets for 0.1.4-fork.5, including the `DOWNLOAD-SHA256SUMS` supplement above) into a temporary directory, verify using that version's checksum file, then extract the package into a permanent user-owned package directory and run `pi install /absolute/path/to/package`. Do not leave an active install under a temporary release directory. Restart Pi or use `/reload` after installation; disk changes do not hot-reload existing sessions.
 
 Keep the previous release/source available for rollback. Preserve public tool identity and existing custom-answer behavior; no real user dialog is opened for packaging verification.
 
