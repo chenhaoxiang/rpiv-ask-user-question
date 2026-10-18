@@ -10,7 +10,7 @@ This repository is the maintained fork:
 
 ## Releases and branch policy
 
-The next maintained release candidate is **0.1.4-fork.5**, based on community **0.1.4**; it is not a public Release until its PR, CI and immutable package checks complete. Fork releases use `<community-version>-fork.<revision>`; the fork revision increases without pretending to be a new upstream release.
+The current maintained release is **0.1.4-fork.5**, based on community **0.1.4**. It is published from the merged main source with an immutable package, source manifest and checksums. Fork releases use `<community-version>-fork.<revision>`; the fork revision increases without pretending to be a new upstream release.
 
 - `main`: our maintained integration and release branch, including fork fixes.
 - `upstream-main`: an exact mirror of the community's `main`, with no fork commits. Never install from this branch.

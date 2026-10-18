@@ -9,6 +9,8 @@ Maintained standalone fork of juicesharp/rpiv-ask-user-question. Use isolated wo
 
 ## Documentation map
 
+- `docs/maintenance/2026-10-18-input-lifecycle-released.md`: fork.5 exact-source PR/CI/Release, flat checksum supplement, installed event-pairing proof and unverified native presentation boundary.
+
 - `docs/maintenance/2026-10-14-question-error-flags-installed.md`: 0.1.4-fork.4 exact review/regular merge/CI, immutable Release, one-source installed-byte verification and native error propagation limits.
 
 - `docs/question-error-flags.md`: UI-unavailable and empty-options failures return structured errors; user decline, custom input, Chat and abort remain normal outcomes.
