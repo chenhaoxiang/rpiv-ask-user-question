@@ -6,6 +6,8 @@ truth_mode: maintained
 created: 2026-10-18
 verified: 2026-10-18
 verified_by: manual
+updated: 2026-10-19
+reviewed: 2026-10-19
 release: 0.1.4-fork.5
 ---
 
@@ -24,3 +26,9 @@ The channel is `pi:input-required`. In the `finally` after the UI promise, emit 
 The observer is optional: absent event-bus support or observer failure never changes the question outcome. No settings, notification, sound or model operation is performed by this producer. Consumers should match version/source/id and must not infer unrelated custom UI ownership from tool execution. Older producer versions continue to ask normally but lack this optional precise reminder signal.
 
 `test/input-lifecycle.test.mjs` uses the existing synthetic host/actual TUI primitives; it verifies opaque payloads, factory/validation/error timing and matching closure. The existing single/multi/custom/chat/concurrency/error contracts remain unchanged. Real terminal/IME and native macOS notification acceptance remain separate.
+
+## Post-delivery review boundary (2026-10-19)
+
+A read-only review of the current main branch and installed `0.1.4-fork.5` source found no blocker or major issue. The producer event remains optional, content-free and scoped to the actual question custom component; it does not establish native dialog, terminal/IME or macOS notification acceptance. The paired `pi-notify-mac` consumer is currently selected separately and matches `version`, `source`, opaque `id` and `phase`.
+
+For joint native checks, use the consumer-owned [manual macOS smoke checklist and optimization boundary](https://github.com/chenhaoxiang/pi-notify-mac/blob/main/docs/input-reminders.md#post-delivery-review-and-manual-smoke-boundary-2026-10-19). Do not maintain a second notification checklist here. Question terminal/IME acceptance remains separate, and the checklist does not change this producer contract. The suggested legacy-file helper is not an implemented command or a scheduled producer feature.
