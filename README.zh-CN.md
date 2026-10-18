@@ -6,7 +6,7 @@ Pi 的 `ask_user_question` 结构化提问扩展，用于请求信息不足、�
 
 ## 发布版本与分支约定
 
-当前维护版本为 **0.1.4-fork.4**，基于社区 **0.1.4**。fork 版本统一使用 `<社区版本>-fork.<修订号>`，本地修订不冒充社区新版本。
+下一维护候选版本为 **0.1.4-fork.5**，基于社区 **0.1.4**；PR、CI 和不可变制品检查完成前，不视为已发布。fork 版本统一使用 `<社区版本>-fork.<修订号>`，本地修订不冒充社区新版本。
 
 - `main`：我们的维护、整合与发布主线，保留 fork 修复。
 - `upstream-main`：仅镜像社区 `main`，不加入 fork 提交，也不作为安装来源。
@@ -15,7 +15,7 @@ Pi 的 `ask_user_question` 结构化提问扩展，用于请求信息不足、�
 固定版本安装：
 
 ```bash
-pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.4
+pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.5
 ```
 
 [GitHub Releases](https://github.com/chenhaoxiang/rpiv-ask-user-question/releases) 提供可安装的包、来源清单和 `SHA256SUMS` 校验文件；这不是向上游作者的 npm 命名空间发布。发布及制品安装流程见[维护说明](docs/releasing.md)。
@@ -61,6 +61,7 @@ UI 不可用和选项为空返回 `isError: true`，供宿主正确识别失败�
 - 只使用 Pi 公共 API 和宿主提供的 `@earendil-works/pi-coding-agent`、`@earendil-works/pi-tui`、`typebox`；
 - 选择器需要交互式 UI；print/RPC 无 UI 时明确返回不可用，不猜测答案；
 - 不写全局配置、凭据、提示词或 Pi 正常工具结果机制之外的会话文件；
+- 如果宿主提供事件总线，真实 custom UI 区间会发出不含敏感内容的 `pi:input-required` start/end 事件（仅包含版本、来源、调用 ID 和阶段），供配套提醒扩展精确识别；不会发送问题正文、选项或答案；
 - `multiSelect: true` 提供真正的多选：空格勾选/取消，Enter 按原顺序提交，未勾选时继续等待。Other 和 Chat 是独立替代答案，不与勾选混合。
 
 ## 并发提问

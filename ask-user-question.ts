@@ -89,9 +89,16 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 			const totalCount = mainItems.length + chatItems.length;
 
 			let removeAbort = () => {};
+			let notified = false;
+			const emitInput = (phase: "start" | "end") => {
+				try { pi.events?.emit("pi:input-required", { version: 1, source: "ask_user_question", id: _toolCallId, phase }); }
+				catch { /* Optional observers must never change the question result. */ }
+			};
 			let choice: (WrappingSelectItem & { selectedIndices?: number[] }) | null;
 			try {
 			choice = await ctx.ui.custom<WrappingSelectItem & { selectedIndices?: number[] } | null>((tui, theme, _kb, done) => {
+				notified = true;
+				emitInput("start");
 				let finished = false;
 				const finish = (value: (WrappingSelectItem & { selectedIndices?: number[] }) | null) => {
 					if (finished) return;
@@ -211,7 +218,10 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 					},
 				};
 			});
-			} finally { removeAbort(); }
+			} finally {
+				removeAbort();
+				if (notified) emitInput("end");
+			}
 
 			if (signal?.aborted) return buildToolResult("Question cancelled", { question: params.question, answer: null });
 			return buildResponse(choice, params);
