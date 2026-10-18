@@ -22,7 +22,7 @@ Applies only to chenhaoxiang/rpiv-ask-user-question. The community project remai
 
 ## Retained community baseline
 
-The current maintained version is **0.1.4-fork.4**; its retained multi-select behavior is in [the feature guide](multiselect.md), serialization in [concurrency contract](concurrent-questions.md), and structured UI/options failure flags in [error-result contract](question-error-flags.md). The previous release facts below describe the retained community base, not the current revision's installed acceptance.
+The current published version is **0.1.4-fork.4**. The next candidate **0.1.4-fork.5** adds only the optional opaque `pi:input-required` producer lifecycle for precise cooperating reminders; it is not published or installed until the normal PR/CI/release checks complete. Retained multi-select behavior is in [the feature guide](multiselect.md), serialization in [concurrency contract](concurrent-questions.md), structured UI/options failure flags in [error-result contract](question-error-flags.md), and the new event contract in [input lifecycle](input-lifecycle.md). The previous release facts below describe the retained community base, not the current candidate's installed acceptance.
 
 Version **0.1.4-fork.1** uses the real standalone community base 0.1.4. Earlier local fork metadata said 0.1.6 without a fork qualifier; the numeric normalization does not revert editable custom answers, exact tool identity or host-provided Pi/typebox imports. Current community main is an ancestor. Source behavior is unchanged.
 

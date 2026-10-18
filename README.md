@@ -10,7 +10,7 @@ This repository is the maintained fork:
 
 ## Releases and branch policy
 
-The maintained release is **0.1.4-fork.4**, based on community **0.1.4**. Fork releases use `<community-version>-fork.<revision>`; the fork revision increases without pretending to be a new upstream release.
+The next maintained release candidate is **0.1.4-fork.5**, based on community **0.1.4**; it is not a public Release until its PR, CI and immutable package checks complete. Fork releases use `<community-version>-fork.<revision>`; the fork revision increases without pretending to be a new upstream release.
 
 - `main`: our maintained integration and release branch, including fork fixes.
 - `upstream-main`: an exact mirror of the community's `main`, with no fork commits. Never install from this branch.
@@ -19,7 +19,7 @@ The maintained release is **0.1.4-fork.4**, based on community **0.1.4**. Fork r
 Install a reproducible release:
 
 ```bash
-pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.4
+pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.5
 ```
 
 [GitHub Releases](https://github.com/chenhaoxiang/rpiv-ask-user-question/releases) include the installable package tarball, a provenance manifest, and `SHA256SUMS`. These GitHub releases are not npm publications under the upstream author's namespace. See [release maintenance](docs/releasing.md) for asset installation and future releases.
@@ -86,6 +86,7 @@ Do not use it for choices that can be made safely as a reversible implementation
 - Uses Pi's public extension APIs and host-provided `@earendil-works/pi-coding-agent`, `@earendil-works/pi-tui`, and `typebox` packages.
 - Requires an interactive Pi UI for the selector. Non-interactive print/RPC use returns an explicit UI-unavailable result instead of guessing.
 - The extension does not write settings, credentials, prompts, or session files outside Pi's normal tool-result/session mechanism.
+- When the host event bus is available, the real custom UI interval emits opaque `pi:input-required` start/end events (`version`, source, call id and phase only) for cooperating notification extensions; prompt text, options and answers are never emitted.
 - `multiSelect: true` enables checkboxes: Space toggles and Enter submits checked options in original order; Other/Chat are exclusive alternatives. Results add `answers`, `selectedIndices`, `multiSelect` while preserving textual `answer`.
 
 ## Concurrent calls

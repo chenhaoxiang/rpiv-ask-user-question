@@ -33,11 +33,11 @@ export async function loadSource(entry) {
   }
   const m = await get(entry); await m.evaluate(); return m.namespace;
 }
-export async function questionHarness() {
+export async function questionHarness(options = {}) {
   const api = await loadSource(new URL('../../ask-user-question.ts', import.meta.url));
   let tool, component, finish, renders = 0;
-  const notices = [];
-  api.registerAskUserQuestionTool({ registerTool: x => { tool = x; } });
+  const notices = [], events = [];
+  api.registerAskUserQuestionTool({ registerTool: x => { tool = x; }, events: { emit: (name, data) => { const value = JSON.parse(JSON.stringify(data)); events.push({ name, data: value }); options.onEvent?.(name, value); } } });
   const ctx = { mode: "tui", hasUI: true, ui: {
     notify: (message, level) => notices.push({ message, level }),
     custom: factory => new Promise(resolve => {
@@ -45,5 +45,5 @@ export async function questionHarness() {
       component = factory({ requestRender: () => renders++ }, theme, {}, resolve);
     }),
   } };
-  return { tool, ctx, notices, get component() { return component; }, get renders() { return renders; }, finish: value => finish(value) };
+  return { tool, ctx, notices, events, get component() { return component; }, get renders() { return renders; }, finish: value => finish(value) };
 }

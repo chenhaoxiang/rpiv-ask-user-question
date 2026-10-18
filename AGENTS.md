@@ -16,6 +16,7 @@ Maintained standalone fork of juicesharp/rpiv-ask-user-question. Use isolated wo
 - `docs/maintenance/2026-10-14-audited-bugfix-installed.md`: 0.1.4-fork.3 red/green defect closure, exact-review-before-merge, main CI, schema1 original Release, installed bytes/native synthetic recheck and activation limits.
 
 - `docs/concurrent-questions.md`: host sequential metadata, explicit per-registration concurrent-call rejection and answer/cancel/abort/UI-failure cleanup regression.
+- `docs/input-lifecycle.md`: optional opaque `pi:input-required` start/end events emitted only around the actual question custom UI for precise cooperating reminders.
 
 - `docs/maintenance/2026-10-14-optimization-installed.md`: 0.1.4-fork.2 exact-source normal merge, CI, fresh-download checksums, installed bytes, combined loader and rollback/activation boundaries.
 
