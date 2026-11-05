@@ -1,6 +1,7 @@
 import { type ExtensionAPI, DynamicBorder, type Theme } from "@earendil-works/pi-coding-agent";
 import { Container, Editor, Spacer, Text, getKeybindings, matchesKey } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
+import { createWorkQuestionObserver, type WorkQuestionCloseReason } from "./work-question-observer.js";
 import {
 	WrappingSelect,
 	type WrappingSelectItem,
@@ -35,6 +36,8 @@ interface QuestionParams {
 	header?: string;
 	options: QuestionOption[];
 	multiSelect?: boolean;
+	workRef?: unknown;
+	stageId?: unknown;
 }
 
 interface ToolDetails {
@@ -49,6 +52,7 @@ interface ToolDetails {
 
 export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 	let awaitingAnswer = false;
+	const workQuestions = createWorkQuestionObserver(pi);
 	const OptionSchema = Type.Object({
 		label: Type.String({ description: "Display label for the option" }),
 		description: Type.Optional(Type.String({ description: "Optional description shown below label" })),
@@ -74,6 +78,8 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 			multiSelect: Type.Optional(
 				Type.Boolean({ description: "Allow multiple selections. Default: false", default: false }),
 			),
+			workRef: Type.Optional(Type.Unknown({ description: "Optional existing PiWorkRef {owner, kind: issue|change|task|document, key}. Observation-only caller declaration; omit if unknown. Invalid metadata does not block the question." })),
+			stageId: Type.Optional(Type.Unknown({ description: "Optional opaque work stage/phase with workRef. Observation only, not authorization or proof that a decision was applied." })),
 		}),
 
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
@@ -82,6 +88,8 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 			if (params.options.length === 0) return { ...buildToolResult(ERROR_NO_OPTIONS, { question: params.question, answer: null }), isError: true };
 			if (awaitingAnswer) throw new Error("A question is already awaiting an answer; concurrent calls are not supported.");
 			awaitingAnswer = true;
+			const observation = workQuestions.begin(_toolCallId, params, ctx);
+			let closeReason: WorkQuestionCloseReason = "error";
 			try {
 
 			const mainItems = buildMainItems(params.options);
@@ -99,6 +107,7 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 			choice = await ctx.ui.custom<WrappingSelectItem & { selectedIndices?: number[] } | null>((tui, theme, _kb, done) => {
 				notified = true;
 				emitInput("start");
+				observation?.opened();
 				let finished = false;
 				const finish = (value: (WrappingSelectItem & { selectedIndices?: number[] }) | null) => {
 					if (finished) return;
@@ -223,9 +232,15 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 				if (notified) emitInput("end");
 			}
 
-			if (signal?.aborted) return buildToolResult("Question cancelled", { question: params.question, answer: null });
-			return buildResponse(choice, params);
-			} finally { awaitingAnswer = false; }
+			if (signal?.aborted) {
+				closeReason = "aborted";
+				return buildToolResult("Question cancelled", { question: params.question, answer: null });
+			}
+			const result = buildResponse(choice, params);
+			closeReason = !choice ? "declined" : choice.isChat ? "chat" : choice.isOther && choice.label.length === 0 ? "empty" : "answered";
+			if (closeReason === "answered") observation?.answerReceived();
+			return result;
+			} finally { awaitingAnswer = false; observation?.closed(closeReason); }
 		},
 	});
 }

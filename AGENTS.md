@@ -18,7 +18,7 @@ Maintained standalone fork of juicesharp/rpiv-ask-user-question. Use isolated wo
 - `docs/maintenance/2026-10-14-audited-bugfix-installed.md`: 0.1.4-fork.3 red/green defect closure, exact-review-before-merge, main CI, schema1 original Release, installed bytes/native synthetic recheck and activation limits.
 
 - `docs/concurrent-questions.md`: host sequential metadata, explicit per-registration concurrent-call rejection and answer/cancel/abort/UI-failure cleanup regression.
-- `docs/input-lifecycle.md`: optional opaque `pi:input-required` events, post-delivery review limits and the consumer-owned manual macOS acceptance entry.
+- `docs/input-lifecycle.md`: unchanged opaque `pi:input-required`, optional content-free `pi:work-question:v1` caller work association/lifecycle, post-delivery limits and consumer-owned manual macOS acceptance. `work-question-observer.ts` owns that bounded optional projection; no work authority/question store.
 
 - `docs/maintenance/2026-10-14-optimization-installed.md`: 0.1.4-fork.2 exact-source normal merge, CI, fresh-download checksums, installed bytes, combined loader and rollback/activation boundaries.
 
