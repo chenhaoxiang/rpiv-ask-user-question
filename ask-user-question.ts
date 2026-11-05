@@ -70,6 +70,7 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 			"Prefer ask_user_question over prose 'please tell me X' — the structured selector gives the user concrete options and records their choice in session history.",
 			"This replaces the AskUserQuestion tool from Claude Code. The user can always pick 'Other (type your own answer)' for free-text input.",
 			"Set multiSelect: true when several options may apply simultaneously; Other and Chat are exclusive alternative answers.",
+			"Only pass ask_user_question workRef/stageId for an existing owner record already established in this task. Omit uncertain metadata; do not infer work from cwd, session titles or owner labels.",
 		],
 		parameters: Type.Object({
 			question: Type.String({ description: "The question to ask the user" }),
@@ -237,7 +238,7 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 				return buildToolResult("Question cancelled", { question: params.question, answer: null });
 			}
 			const result = buildResponse(choice, params);
-			closeReason = !choice ? "declined" : choice.isChat ? "chat" : choice.isOther && choice.label.length === 0 ? "empty" : "answered";
+			closeReason = result.details.wasChat ? "chat" : result.details.answer === null ? result.details.wasCustom ? "empty" : "declined" : "answered";
 			if (closeReason === "answered") observation?.answerReceived();
 			return result;
 			} finally { awaitingAnswer = false; observation?.closed(closeReason); }

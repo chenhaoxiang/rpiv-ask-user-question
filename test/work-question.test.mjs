@@ -25,7 +25,7 @@ test('original UI identity and explicit work declaration produce three content-f
 });
 
 test('missing and malformed work metadata never blocks the original question or invents association',async()=>{
-  const variants=[ [{},'unbound'],[{stageId:'alone'},'unavailable'],[{workRef:{...workRef,key:'../private'}},'unavailable'],[{workRef:{...workRef,owner:'ghp_'+ 'a'.repeat(30)}},'unavailable'],[{workRef,stageId:'x'.repeat(129)},'unavailable'],[{workRef:{...workRef,extra:true}},'unavailable'],[{workRef:null},'unavailable'] ];
+  const variants=[ [{},'unbound'],[{stageId:'alone'},'unavailable'],[{workRef:{...workRef,key:'../private'}},'unavailable'],[{workRef:{...workRef,owner:'ghp_'+ 'a'.repeat(30)}},'unavailable'],[{workRef,stageId:'x'.repeat(129)},'unavailable'],[{workRef:{...workRef,extra:true}},'unavailable'],[{workRef:null},'unavailable'],[{workRef:{...workRef,kind:'made-up'}},'unavailable'],[{workRef:{...workRef,owner:'a/b/c'}},'unavailable'],[{workRef:{...workRef,owner:'x'.repeat(257)}},'unavailable'] ];
   for(const [extra,state] of variants){const h=await questionHarness({sessionId:'native-session'});const result=await answer(h,extra);assert.equal(result.details.answer,'PRIVATE_OPTION_A');assert.equal(rows(h)[0].workAssociation,state);assert.equal(rows(h)[0].workRef,null);assert.equal(rows(h)[0].stageId,null);}
 });
 
@@ -88,5 +88,8 @@ test('unsafe native identities are not broadcast while legacy question behavior 
   for(const id of ['/private/id','C:/123','../1','x'.repeat(513),'sk-'+ 'a'.repeat(40)]){
     const h=await questionHarness({sessionId:'native-session'});const pending=h.tool.execute(id,params,undefined,undefined,h.ctx);h.finish(null);await pending;assert.equal(rows(h).length,0);assert.equal(h.events.filter(e=>e.name==='pi:input-required').length,2);
   }
-  const h=await questionHarness({sessionId:'/private/session'});await answer(h);assert.equal(rows(h).length,0);
+  for(const sessionId of ['/private/session','ghp_'+ 'a'.repeat(30)]) {const h=await questionHarness({sessionId});await answer(h);assert.equal(rows(h).length,0);}
+  const valid=await questionHarness({sessionId:'native-session'});
+  const pending=valid.tool.execute('call:provider|id/1/2',params,undefined,undefined,valid.ctx);valid.finish(null);await pending;
+  assert.equal(rows(valid)[0].toolCallId,'call:provider|id/1/2');
 });

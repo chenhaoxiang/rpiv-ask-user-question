@@ -68,7 +68,7 @@ UI 不可用和选项为空返回 `isError: true`，供宿主正确识别失败�
 
 调用方可提供既有 PiWorkRef 形状的 `workRef: {owner, kind, key}` 和可选 `stageId`。不知道时应省略；这只是调用方声明，不认证工作归属或授予权限。观察元数据错误时只标记关联不可用，不阻止原生提问。
 
-独立的 `pi:work-question:v1` 事件仅携带原生 session/call 身份、owner epoch/序号、原观察时间、安全工作关联及打开/收到答案/关闭阶段，不发送问题正文、选项或答案。原 `pi:input-required` 和 ToolResult 语义不变；消费者按精确调用身份去重，只产生一次提醒。收到文本或多选结果不代表业务决定已应用或工作完成；session/tree 换代后旧回调不能污染新观察范围。替换/撤销、迟答适用性、部分答复和新负责人承接仍是后续原owner合同，本切片不新建问题库、回答入口或审批机制。详见[事件合同](docs/input-lifecycle.md#optional-work-bound-question-observation-014-fork6-candidate)。
+独立的 `pi:work-question:v1` 事件仅携带原生 session/call 身份、producer 实例 epoch/序号、原观察时间、安全工作关联及打开/收到答案/关闭阶段，不发送问题正文、选项或答案。原 `pi:input-required` 和 ToolResult 语义不变；消费者按精确调用身份去重，只产生一次提醒。收到文本或多选结果不代表业务决定已应用或工作完成；session/tree 换代后旧回调不能污染新观察范围。替换/撤销、迟答适用性、部分答复和新负责人承接仍是后续原owner合同，本切片不新建问题库、回答入口或审批机制。详见[事件合同](docs/input-lifecycle.md#optional-work-bound-question-observation-014-fork6-candidate)。
 
 ## 并发提问
 

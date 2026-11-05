@@ -93,7 +93,7 @@ Do not use it for choices that can be made safely as a reversible implementation
 
 Callers may add `workRef: {owner, kind, key}` using the existing PiWorkRef shape and an optional opaque `stageId`. Omit them when unknown; they are caller declarations, not authenticated work ownership or permission. Malformed observation metadata becomes unavailable without blocking the original question.
 
-The separate `pi:work-question:v1` event carries native session/call identity, owner epoch/sequence, original observation time, optional safe work association and opened/answer-received/closed phases. It contains no question/options/answer body. Existing `pi:input-required` events and ToolResult outcomes remain unchanged; consumers deduplicate the two by the exact call identity. Received text or multi-selection does not apply a business decision or complete work. Late callbacks are fenced from a replacement session/tree scope. See [the exact event contract and limits](docs/input-lifecycle.md#optional-work-bound-question-observation-014-fork6-candidate).
+The separate `pi:work-question:v1` event carries native session/call identity, producer epoch/sequence, original observation time, optional safe work association and opened/answer-received/closed phases. It contains no question/options/answer body. Existing `pi:input-required` events and ToolResult outcomes remain unchanged; consumers deduplicate the two by the exact call identity. Received text or multi-selection does not apply a business decision or complete work. Late callbacks are fenced from a replacement session/tree scope. See [the exact event contract and limits](docs/input-lifecycle.md#optional-work-bound-question-observation-014-fork6-candidate).
 
 ## Concurrent calls
 
