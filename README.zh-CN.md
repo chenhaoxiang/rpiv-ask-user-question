@@ -6,16 +6,16 @@ Pi 的 `ask_user_question` 结构化提问扩展，用于请求信息不足、�
 
 ## 发布版本与分支约定
 
-当前维护版本为 **0.1.4-fork.5**，基于社区 **0.1.4**。已从合入后的主分支发布固定制品、来源清单与校验文件。fork 版本统一使用 `<社区版本>-fork.<修订号>`，本地修订不冒充社区新版本。
+当前源码版本为 **0.1.4-fork.6**，基于社区 **0.1.4**，新增可选的工作关联问题观察。发布、安装和运行中会话加载分开核验；原 **0.1.4-fork.5** 发布版保留。fork 版本统一使用 `<社区版本>-fork.<修订号>`，本地修订不冒充社区新版本。
 
 - `main`：我们的维护、整合与发布主线，保留 fork 修复。
 - `upstream-main`：仅镜像社区 `main`，不加入 fork 提交，也不作为安装来源。
 - 改动通过经过审核的 PR 合入 `main`；保留现有分支和历史。
 
-固定版本安装：
+fork.6 发布后可固定安装：
 
 ```bash
-pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.5
+pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.6
 ```
 
 [GitHub Releases](https://github.com/chenhaoxiang/rpiv-ask-user-question/releases) 提供可安装的包、来源清单和 `SHA256SUMS` 校验文件；这不是向上游作者的 npm 命名空间发布。发布及制品安装流程见[维护说明](docs/releasing.md)。
@@ -63,6 +63,12 @@ UI 不可用和选项为空返回 `isError: true`，供宿主正确识别失败�
 - 不写全局配置、凭据、提示词或 Pi 正常工具结果机制之外的会话文件；
 - 如果宿主提供事件总线，真实 custom UI 区间会发出不含敏感内容的 `pi:input-required` start/end 事件（仅包含版本、来源、调用 ID 和阶段），供配套提醒扩展精确识别；不会发送问题正文、选项或答案；
 - `multiSelect: true` 提供真正的多选：空格勾选/取消，Enter 按原顺序提交，未勾选时继续等待。Other 和 Chat 是独立替代答案，不与勾选混合。
+
+## 可选工作关联
+
+调用方可提供既有 PiWorkRef 形状的 `workRef: {owner, kind, key}` 和可选 `stageId`。不知道时应省略；这只是调用方声明，不认证工作归属或授予权限。观察元数据错误时只标记关联不可用，不阻止原生提问。
+
+独立的 `pi:work-question:v1` 事件仅携带原生 session/call 身份、producer 实例 epoch/序号、原观察时间、安全工作关联及打开/收到答案/关闭阶段，不发送问题正文、选项或答案。原 `pi:input-required` 和 ToolResult 语义不变；消费者按精确调用身份去重，只产生一次提醒。收到文本或多选结果不代表业务决定已应用或工作完成；session/tree 换代后旧回调不能污染新观察范围。替换/撤销、迟答适用性、部分答复和新负责人承接仍是后续原owner合同，本切片不新建问题库、回答入口或审批机制。详见[事件合同](docs/input-lifecycle.md#optional-work-bound-question-observation-014-fork6-candidate)。
 
 ## 并发提问
 

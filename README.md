@@ -10,16 +10,16 @@ This repository is the maintained fork:
 
 ## Releases and branch policy
 
-The current maintained release is **0.1.4-fork.5**, based on community **0.1.4**. It is published from the merged main source with an immutable package, source manifest and checksums. Fork releases use `<community-version>-fork.<revision>`; the fork revision increases without pretending to be a new upstream release.
+This source version is **0.1.4-fork.6**, based on community **0.1.4**, with optional work-bound question observations. Publication, installation and active-session loading remain separate; the previous **0.1.4-fork.5** release is retained. Fork releases use `<community-version>-fork.<revision>`; the fork revision increases without pretending to be a new upstream release.
 
 - `main`: our maintained integration and release branch, including fork fixes.
 - `upstream-main`: an exact mirror of the community's `main`, with no fork commits. Never install from this branch.
 - Changes enter `main` through reviewed pull requests; existing branches and history are retained.
 
-Install a reproducible release:
+For the fork.6 release, once published:
 
 ```bash
-pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.5
+pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.6
 ```
 
 [GitHub Releases](https://github.com/chenhaoxiang/rpiv-ask-user-question/releases) include the installable package tarball, a provenance manifest, and `SHA256SUMS`. These GitHub releases are not npm publications under the upstream author's namespace. See [release maintenance](docs/releasing.md) for asset installation and future releases.
@@ -88,6 +88,12 @@ Do not use it for choices that can be made safely as a reversible implementation
 - The extension does not write settings, credentials, prompts, or session files outside Pi's normal tool-result/session mechanism.
 - When the host event bus is available, the real custom UI interval emits opaque `pi:input-required` start/end events (`version`, source, call id and phase only) for cooperating notification extensions; prompt text, options and answers are never emitted.
 - `multiSelect: true` enables checkboxes: Space toggles and Enter submits checked options in original order; Other/Chat are exclusive alternatives. Results add `answers`, `selectedIndices`, `multiSelect` while preserving textual `answer`.
+
+## Optional work association
+
+Callers may add `workRef: {owner, kind, key}` using the existing PiWorkRef shape and an optional opaque `stageId`. Omit them when unknown; they are caller declarations, not authenticated work ownership or permission. Malformed observation metadata becomes unavailable without blocking the original question.
+
+The separate `pi:work-question:v1` event carries native session/call identity, producer epoch/sequence, original observation time, optional safe work association and opened/answer-received/closed phases. It contains no question/options/answer body. Existing `pi:input-required` events and ToolResult outcomes remain unchanged; consumers deduplicate the two by the exact call identity. Received text or multi-selection does not apply a business decision or complete work. Late callbacks are fenced from a replacement session/tree scope. See [the exact event contract and limits](docs/input-lifecycle.md#optional-work-bound-question-observation-014-fork6-candidate).
 
 ## Concurrent calls
 

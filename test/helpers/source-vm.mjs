@@ -5,11 +5,15 @@ import { stripTypeScriptTypes } from 'node:module';
 import { SourceTextModule, SyntheticModule, createContext } from 'node:vm';
 import * as tui from '@earendil-works/pi-tui';
 import { Type } from 'typebox';
+import { randomUUID } from 'node:crypto';
+import { types } from 'node:util';
 export const theme = { fg: (_c, x) => x, bg: (_c, x) => x, bold: x => x, strikethrough: x => x };
 export async function loadSource(entry) {
   const context = createContext({ console, Intl, AbortController });
   const cache = new Map();
   const host = {
+    'node:crypto': { randomUUID },
+    'node:util': { types },
     '@earendil-works/pi-tui': tui,
     'typebox': { Type },
     '@earendil-works/pi-ai': { StringEnum: values => Type.Union(values.map(x => Type.Literal(x))) },
@@ -36,8 +40,11 @@ export async function loadSource(entry) {
 export async function questionHarness(options = {}) {
   const api = await loadSource(new URL('../../ask-user-question.ts', import.meta.url));
   let tool, component, finish, renders = 0;
-  const notices = [], events = [];
-  api.registerAskUserQuestionTool({ registerTool: x => { tool = x; }, events: { emit: (name, data) => { const value = JSON.parse(JSON.stringify(data)); events.push({ name, data: value }); options.onEvent?.(name, value); } } });
+  const notices = [], events = [], hooks = new Map();
+  api.registerAskUserQuestionTool({ registerTool: x => { tool = x; }, on: (name, handler) => {
+    if (options.registrationError) throw Error('observer registration unavailable');
+    hooks.set(name, handler); return () => hooks.delete(name);
+  }, events: { emit: (name, data) => { const value = JSON.parse(JSON.stringify(data)); events.push({ name, data: value }); options.onEvent?.(name, value); } } });
   const ctx = { mode: "tui", hasUI: true, ui: {
     notify: (message, level) => notices.push({ message, level }),
     custom: factory => new Promise(resolve => {
@@ -45,5 +52,7 @@ export async function questionHarness(options = {}) {
       component = factory({ requestRender: () => renders++ }, theme, {}, resolve);
     }),
   } };
-  return { tool, ctx, notices, events, get component() { return component; }, get renders() { return renders; }, finish: value => finish(value) };
+  if (options.sessionId) ctx.sessionManager = { getSessionId: () => options.sessionId };
+  hooks.get('session_start')?.({}, ctx);
+  return { tool, ctx, notices, events, hooks, get component() { return component; }, get renders() { return renders; }, finish: value => finish(value) };
 }
