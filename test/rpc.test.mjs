@@ -29,6 +29,7 @@ test('RPC single selection preserves the original label despite duplicate displa
   assert.ok(!r.isError);
   assert.equal(h.dialogs[0].options.length, params.options.length + 2);
   assert.match(h.dialogs[0].options[1], /duplicate/);
+  assert.equal(h.events.length, 0);
 });
 
 test('RPC Other and empty Other preserve the existing result contract', async () => {
@@ -81,10 +82,17 @@ test('RPC abort releases the concurrency guard and late UI results cannot answer
   await assert.rejects(h.tool.execute('overlap', params, undefined, undefined, h.ctx), /already awaiting/);
   a.abort();
   assert.equal((await pending).content[0].text, 'Question cancelled');
+  let finishNew;
+  h.ctx.ui.select = async (_title, options) => new Promise(resolve => { finishNew = () => resolve(options[2]); });
+  let newSettled = false;
+  const next = h.tool.execute('next', params, undefined, undefined, h.ctx).then(value => { newSettled = true; return value; });
+  await Promise.resolve();
   late('old answer');
-  h.ctx.ui.select = async (_title, options) => options[2];
-  const next = await h.tool.execute('next', params, undefined, undefined, h.ctx);
-  assert.equal(next.details.answer, 'B');
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(newSettled, false);
+  finishNew();
+  assert.equal((await next).details.answer, 'B');
 });
 
 test('RPC UI failures release the same guard; unavailable hosts remain structured errors', async () => {

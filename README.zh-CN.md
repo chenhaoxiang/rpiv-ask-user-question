@@ -59,7 +59,7 @@ UI 不可用和选项为空返回 `isError: true`，供宿主正确识别失败�
 ## 兼容性与限制
 
 - 只使用 Pi 公共 API 和宿主提供的 `@earendil-works/pi-coding-agent`、`@earendil-works/pi-tui`、`typebox`；
-- 保留原 TUI，并支持公共 RPC `select` / `input`；RPC 多选使用明确的勾选/提交菜单，不复刻终端组件。print/JSON 或对话 API 不可用时返回 `isError: true`；RPC 未回答是取消，不猜测默认答案。见 [RPC 行为与验证](docs/multiselect.md#rpc-dialog-mode-source-candidate)；
+- 保留原 TUI，并支持公共 RPC `select` / `input`；RPC 多选使用明确的勾选/提交菜单，不复刻终端组件。print/JSON 或对话 API 不可用时返回 `isError: true`；RPC 的取消/undefined 回复不作为默认答案；完全无响应则继续等待宿主取消、中止或其自己的期限。见 [RPC 行为与验证](docs/multiselect.md#rpc-dialog-mode-source-candidate)；
 - 不写全局配置、凭据、提示词或 Pi 正常工具结果机制之外的会话文件；
 - 如果宿主提供事件总线，真实 custom UI 区间会发出不含敏感内容的 `pi:input-required` start/end 事件（仅包含版本、来源、调用 ID 和阶段），供配套提醒扩展精确识别；不会发送问题正文、选项或答案；
 - `multiSelect: true` 提供真正的多选：空格勾选/取消，Enter 按原顺序提交，未勾选时继续等待。Other 和 Chat 是独立替代答案，不与勾选混合。

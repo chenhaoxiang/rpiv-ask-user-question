@@ -84,7 +84,7 @@ Do not use it for choices that can be made safely as a reversible implementation
 ## Compatibility and limits
 
 - Uses Pi's public extension APIs and host-provided `@earendil-works/pi-coding-agent`, `@earendil-works/pi-tui`, and `typebox` packages.
-- Supports the original interactive TUI and public RPC `select` / `input` dialogs. RPC multi-select uses explicit toggle-and-submit menus, not terminal components. Print/JSON or an unavailable dialog API returns `isError: true`; an unanswered RPC dialog is cancellation, never a default answer. See [RPC behavior and verification](docs/multiselect.md#rpc-dialog-mode-source-candidate).
+- Supports the original interactive TUI and public RPC `select` / `input` dialogs. RPC multi-select uses explicit toggle-and-submit menus, not terminal components. Print/JSON or an unavailable dialog API returns `isError: true`; an explicit cancellation/undefined reply is not a default answer. A nonresponding host keeps waiting until it cancels, aborts or imposes its own deadline. See [RPC behavior and verification](docs/multiselect.md#rpc-dialog-mode-source-candidate).
 - The extension does not write settings, credentials, prompts, or session files outside Pi's normal tool-result/session mechanism.
 - When the host event bus is available, the real custom UI interval emits opaque `pi:input-required` start/end events (`version`, source, call id and phase only) for cooperating notification extensions; prompt text, options and answers are never emitted.
 - `multiSelect: true` enables checkboxes: Space toggles and Enter submits checked options in original order; Other/Chat are exclusive alternatives. Results add `answers`, `selectedIndices`, `multiSelect` while preserving textual `answer`.
