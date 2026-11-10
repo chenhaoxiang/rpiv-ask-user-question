@@ -6,13 +6,13 @@ Pi 的 `ask_user_question` 结构化提问扩展，用于请求信息不足、�
 
 ## 发布版本与分支约定
 
-当前源码版本为 **0.1.4-fork.6**，基于社区 **0.1.4**，新增可选的工作关联问题观察。发布、安装和运行中会话加载分开核验；原 **0.1.4-fork.5** 发布版保留。fork 版本统一使用 `<社区版本>-fork.<修订号>`，本地修订不冒充社区新版本。
+当前源码候选为 **0.1.4-fork.7**，基于社区 **0.1.4**，新增公共 RPC 问答并保留 TUI 和工作关联观察。本次不发布或安装；最新已发布版本仍为 **0.1.4-fork.6**。发布、安装和运行中会话加载分开核验，历史版本保留。fork 版本统一使用 `<社区版本>-fork.<修订号>`，本地修订不冒充社区新版本。
 
 - `main`：我们的维护、整合与发布主线，保留 fork 修复。
 - `upstream-main`：仅镜像社区 `main`，不加入 fork 提交，也不作为安装来源。
 - 改动通过经过审核的 PR 合入 `main`；保留现有分支和历史。
 
-fork.6 发布后可固定安装：
+现有 fork.6 已发布，可固定安装：
 
 ```bash
 pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.6
@@ -59,7 +59,7 @@ UI 不可用和选项为空返回 `isError: true`，供宿主正确识别失败�
 ## 兼容性与限制
 
 - 只使用 Pi 公共 API 和宿主提供的 `@earendil-works/pi-coding-agent`、`@earendil-works/pi-tui`、`typebox`；
-- 选择器需要交互式 UI；print/RPC 无 UI 时明确返回不可用，不猜测答案；
+- 保留原 TUI，并支持公共 RPC `select` / `input`；RPC 多选使用明确的勾选/提交菜单，不复刻终端组件。print/JSON 或对话 API 不可用时返回 `isError: true`；RPC 未回答是取消，不猜测默认答案。见 [RPC 行为与验证](docs/multiselect.md#rpc-dialog-mode-source-candidate)；
 - 不写全局配置、凭据、提示词或 Pi 正常工具结果机制之外的会话文件；
 - 如果宿主提供事件总线，真实 custom UI 区间会发出不含敏感内容的 `pi:input-required` start/end 事件（仅包含版本、来源、调用 ID 和阶段），供配套提醒扩展精确识别；不会发送问题正文、选项或答案；
 - `multiSelect: true` 提供真正的多选：空格勾选/取消，Enter 按原顺序提交，未勾选时继续等待。Other 和 Chat 是独立替代答案，不与勾选混合。

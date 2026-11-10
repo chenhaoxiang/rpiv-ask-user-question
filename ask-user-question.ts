@@ -1,6 +1,7 @@
 import { type ExtensionAPI, DynamicBorder, type Theme } from "@earendil-works/pi-coding-agent";
 import { Container, Editor, Spacer, Text, getKeybindings, matchesKey } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
+import { askRpcQuestion } from "./rpc-question.js";
 import { createWorkQuestionObserver, type WorkQuestionCloseReason } from "./work-question-observer.js";
 import {
 	WrappingSelect,
@@ -31,7 +32,7 @@ interface QuestionOption {
 	description?: string;
 }
 
-interface QuestionParams {
+export interface QuestionParams {
 	question: string;
 	header?: string;
 	options: QuestionOption[];
@@ -85,14 +86,18 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 
 		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
 			if (signal?.aborted) return buildToolResult("Question cancelled", { question: params.question, answer: null });
-			if (!ctx.hasUI || ctx.mode !== "tui") return { ...buildToolResult(ERROR_NO_UI, { question: params.question, answer: null }), isError: true };
+			const rpcUi = ctx.mode === "rpc" && typeof ctx.ui.select === "function" && typeof ctx.ui.input === "function";
+			if (!ctx.hasUI || (ctx.mode !== "tui" && !rpcUi)) return { ...buildToolResult(ERROR_NO_UI, { question: params.question, answer: null }), isError: true };
 			if (params.options.length === 0) return { ...buildToolResult(ERROR_NO_OPTIONS, { question: params.question, answer: null }), isError: true };
 			if (awaitingAnswer) throw new Error("A question is already awaiting an answer; concurrent calls are not supported.");
 			awaitingAnswer = true;
-			const observation = workQuestions.begin(_toolCallId, params, ctx);
+			const observation = rpcUi ? undefined : workQuestions.begin(_toolCallId, params, ctx);
 			let closeReason: WorkQuestionCloseReason = "error";
 			try {
-
+			let choice: (WrappingSelectItem & { selectedIndices?: number[] }) | null;
+			if (rpcUi) {
+				choice = await askRpcQuestion(params, ctx.ui, signal);
+			} else {
 			const mainItems = buildMainItems(params.options);
 			const chatItems: WrappingSelectItem[] = [{ label: CHAT_ABOUT_THIS_LABEL, isChat: true }];
 			const totalCount = mainItems.length + chatItems.length;
@@ -103,7 +108,6 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 				try { pi.events?.emit("pi:input-required", { version: 1, source: "ask_user_question", id: _toolCallId, phase }); }
 				catch { /* Optional observers must never change the question result. */ }
 			};
-			let choice: (WrappingSelectItem & { selectedIndices?: number[] }) | null;
 			try {
 			choice = await ctx.ui.custom<WrappingSelectItem & { selectedIndices?: number[] } | null>((tui, theme, _kb, done) => {
 				notified = true;
@@ -231,6 +235,7 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 			} finally {
 				removeAbort();
 				if (notified) emitInput("end");
+			}
 			}
 
 			if (signal?.aborted) {

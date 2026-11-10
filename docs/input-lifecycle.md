@@ -24,6 +24,8 @@ When the actual question custom-component factory runs, emit on `pi.events`:
 
 The channel is `pi:input-required`. In the `finally` after the UI promise, emit the same identity with `phase: end`. Validation/no-UI/already-aborted paths, or a host that rejects the custom call before running the factory, emit nothing. Answer, decline, abort and errors after opening emit one matching end. No question title/text, options, answer, tool arguments, session path or credentials are emitted. Call IDs are opaque in-memory correlation only, not authorization or proof of model/session identity.
 
+RPC dialogs do not run the terminal custom-component factory and therefore emit neither custom-component input intervals nor optional work-question observations. Remote hosts own their actual display/correlation lifecycle; an RPC request alone is not evidence that a dialog was shown.
+
 The observer is optional: absent event-bus support or observer failure never changes the question outcome. No settings, notification, sound or model operation is performed by this producer. Consumers should match version/source/id and must not infer unrelated custom UI ownership from tool execution. Older producer versions continue to ask normally but lack this optional precise reminder signal.
 
 ## Optional work-bound question observation (0.1.4-fork.6 candidate)
