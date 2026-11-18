@@ -22,9 +22,9 @@ Applies only to chenhaoxiang/rpiv-ask-user-question. The community project remai
 
 ## Retained community baseline
 
-This source version is **0.1.4-fork.6**, adding optional metadata-only work-question observations while preserving the original opaque input lifecycle and UI/result semantics. Its source/package/installed evidence must be recorded separately; see [input lifecycle](input-lifecycle.md). No package on-disk update hot-reloads an active question or Pi session.
+The current source candidate is **0.1.4-fork.8**, based on community **0.1.4**. This is a source-only candidate: validation here does not publish a tag or GitHub Release, produce release assets or checksums, or install the candidate. Source, release, installation and active-session loading are verified separately.
 
-The current published version is **0.1.4-fork.5**, based on the retained community 0.1.4 line. It adds only the optional opaque `pi:input-required` producer lifecycle for precise cooperating reminders; the immutable Release targets merged main and has passed PR/CI/package/download checks. Retained multi-select behavior is in [the feature guide](multiselect.md), serialization in [concurrency contract](concurrent-questions.md), structured UI/options failure flags in [error-result contract](question-error-flags.md), and the new event contract in [input lifecycle](input-lifecycle.md). The previous release facts below describe the retained community base, not the current candidate's installed acceptance.
+The current published version and stable rollback is **0.1.4-fork.7** (`v0.1.4-fork.7`), on the same community baseline. See [the feature guide](multiselect.md) for multi-select and RPC behavior, [the concurrency contract](concurrent-questions.md) for serialization, [the error-result contract](question-error-flags.md) for structured failure flags, and [the input lifecycle contract](input-lifecycle.md) for optional observations.
 
 Version **0.1.4-fork.1** uses the real standalone community base 0.1.4. Earlier local fork metadata said 0.1.6 without a fork qualifier; the numeric normalization does not revert editable custom answers, exact tool identity or host-provided Pi/typebox imports. Current community main is an ancestor. Source behavior is unchanged.
 
@@ -47,11 +47,11 @@ The original 0.1.4-fork.5 `SHA256SUMS` contains build-relative paths and is reta
 
 Prefer the pinned git command in README. For offline/artifact installs, download the complete asset set for the selected Release (four assets for 0.1.4-fork.5, including the `DOWNLOAD-SHA256SUMS` supplement above) into a temporary directory, verify using that version's checksum file, then extract the package into a permanent user-owned package directory and run `pi install /absolute/path/to/package`. Do not leave an active install under a temporary release directory. Restart Pi or use `/reload` after installation; disk changes do not hot-reload existing sessions.
 
-Keep the previous release/source available for rollback. Preserve public tool identity and existing custom-answer behavior; no real user dialog is opened for packaging verification.
+For a stable rollback from the source candidate, use the pinned `v0.1.4-fork.7` git source or the verified assets from that Release, not the moving `main` branch. Keep prior releases available. Preserve public tool identity and existing custom-answer behavior; no real user dialog is opened for packaging verification.
 
 ## 中文摘要
 
-`main` 是保留我们修复的维护主线，`upstream-main` 只镜像社区主分支。版本使用社区基线加 `-fork.N`，每次通过测试的版本都发布固定 tag、GitHub Release、可安装包、来源清单和 SHA-256 校验文件。社区镜像领先不代表该新功能已进入本次发布；不能用纯社区树覆盖我们的修复。安装后需重启或 reload，已有会话不会自动切换。
+`main` 是保留我们修复的维护主线，`upstream-main` 只镜像社区主分支。当前 **0.1.4-fork.8** 基于社区 **0.1.4**，仅为源码候选；稳定回退请固定到已发布的 `v0.1.4-fork.7`，而不是随 `main` 移动。正式发布时才创建固定 tag、GitHub Release、可安装包、来源清单和 SHA-256 校验文件。社区镜像领先不代表该新功能已进入本次发布；不能用纯社区树覆盖我们的修复。安装后需重启或 reload，已有会话不会自动切换。
 
 ## Manifest consumer contract
 

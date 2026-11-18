@@ -10,16 +10,16 @@ This repository is the maintained fork:
 
 ## Releases and branch policy
 
-This source candidate is **0.1.4-fork.7**, based on community **0.1.4**, adding public RPC question dialogs while preserving TUI and optional work-bound observations. It is not published or installed by this change; **0.1.4-fork.6** remains the latest published release. Publication, installation and active-session loading remain separate; older releases are retained. Fork releases use `<community-version>-fork.<revision>`; the fork revision increases without pretending to be a new upstream release.
+This source candidate is **0.1.4-fork.8**, based on community **0.1.4**. It is source-only and is not published or installed by this change; the published **0.1.4-fork.7** remains the stable rollback release. Publication, installation and active-session loading remain separate; older releases are retained. Fork releases use `<community-version>-fork.<revision>`; the fork revision increases without pretending to be a new upstream release.
 
 - `main`: our maintained integration and release branch, including fork fixes.
 - `upstream-main`: an exact mirror of the community's `main`, with no fork commits. Never install from this branch.
 - Changes enter `main` through reviewed pull requests; existing branches and history are retained.
 
-To install the existing published fork.6 release:
+To install the existing published fork.7 release as a stable rollback:
 
 ```bash
-pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.6
+pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.7
 ```
 
 [GitHub Releases](https://github.com/chenhaoxiang/rpiv-ask-user-question/releases) include the installable package tarball, a provenance manifest, and `SHA256SUMS`. These GitHub releases are not npm publications under the upstream author's namespace. See [release maintenance](docs/releasing.md) for asset installation and future releases.

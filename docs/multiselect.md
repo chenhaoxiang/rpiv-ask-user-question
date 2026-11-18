@@ -18,7 +18,7 @@ Top-level development TUI/TypeBox versions are exact pins; transitive test depen
 
 ## RPC dialog mode (source candidate)
 
-The unreleased `0.1.4-fork.7` source candidate now supports `ctx.mode === "rpc"` through public `ui.select` and `ui.input`; it never invokes `ui.custom` in RPC. Numbered wire options preserve duplicate labels and descriptions. Multi-select repeatedly toggles explicit positions and requires the separate Submit action; empty selections remain open. Other opens text input and Chat remains an exclusive alternative. The existing textual `answer`, `answers`, zero-based `selectedIndices`, custom/chat markers and cancellation/error contracts are shared with TUI. Abort races and UI failure release the same concurrency guard; a late reply cannot complete a later question.
+Since `0.1.4-fork.7`, the source supports `ctx.mode === "rpc"` through public `ui.select` and `ui.input`; it never invokes `ui.custom` in RPC. Numbered wire options preserve duplicate labels and descriptions. Multi-select repeatedly toggles explicit positions and requires the separate Submit action; empty selections remain open. Other opens text input and Chat remains an exclusive alternative. The existing textual `answer`, `answers`, zero-based `selectedIndices`, custom/chat markers and cancellation/error contracts are shared with TUI. Abort races and UI failure release the same concurrency guard; a late reply cannot complete a later question.
 
 The optional legacy/custom-component input and work-observation events remain TUI-only. An RPC request is not evidence that a remote client actually displayed a dialog, so this source does not emit fabricated custom-UI intervals. The RPC host owns its visible request/operation lifecycle.
 

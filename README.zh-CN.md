@@ -6,16 +6,16 @@ Pi 的 `ask_user_question` 结构化提问扩展，用于请求信息不足、�
 
 ## 发布版本与分支约定
 
-当前源码候选为 **0.1.4-fork.7**，基于社区 **0.1.4**，新增公共 RPC 问答并保留 TUI 和工作关联观察。本次不发布或安装；最新已发布版本仍为 **0.1.4-fork.6**。发布、安装和运行中会话加载分开核验，历史版本保留。fork 版本统一使用 `<社区版本>-fork.<修订号>`，本地修订不冒充社区新版本。
+当前源码候选为 **0.1.4-fork.8**，基于社区 **0.1.4**。本次仅收口源码候选，不发布或安装；已发布的 **0.1.4-fork.7** 仍是稳定回退版本。发布、安装和运行中会话加载分开核验，历史版本保留。fork 版本统一使用 `<社区版本>-fork.<修订号>`，本地修订不冒充社区新版本。
 
 - `main`：我们的维护、整合与发布主线，保留 fork 修复。
 - `upstream-main`：仅镜像社区 `main`，不加入 fork 提交，也不作为安装来源。
 - 改动通过经过审核的 PR 合入 `main`；保留现有分支和历史。
 
-现有 fork.6 已发布，可固定安装：
+现有 fork.7 已发布，作为稳定回退版本可固定安装：
 
 ```bash
-pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.6
+pi install git:github.com/chenhaoxiang/rpiv-ask-user-question@v0.1.4-fork.7
 ```
 
 [GitHub Releases](https://github.com/chenhaoxiang/rpiv-ask-user-question/releases) 提供可安装的包、来源清单和 `SHA256SUMS` 校验文件；这不是向上游作者的 npm 命名空间发布。发布及制品安装流程见[维护说明](docs/releasing.md)。
