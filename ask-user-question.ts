@@ -13,6 +13,7 @@ import {
 export type { QuestionParams } from "./question-arguments.js";
 
 const MAX_VISIBLE_ITEMS = 10;
+const OPTION_DIGIT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
 
 const TYPE_SOMETHING_LABEL = "Type something.";
 const CHAT_ABOUT_THIS_LABEL = "Chat about this";
@@ -218,6 +219,11 @@ async function askTuiQuestion(
 
 				const render = buildDialog(theme, params, mainList, chatList);
 				if (params.multiSelect) mainList.setCheckedIndices(checked);
+				const toggleOption = (index: number) => {
+					if (checked.has(index)) checked.delete(index); else checked.add(index);
+					mainList.setCheckedIndices(checked);
+					tui.requestRender();
+				};
 
 				const handleInput = (data: string) => {
 					const currentItem = itemAt(selectionIndex, mainItems, chatItems);
@@ -236,10 +242,8 @@ async function askTuiQuestion(
 						tui.requestRender();
 						return;
 					}
-					if (params.multiSelect && !isInlineInputActive && selectionIndex < params.options.length && matchesKey(data, "space")) {
-						if (checked.has(selectionIndex)) checked.delete(selectionIndex); else checked.add(selectionIndex);
-						mainList.setCheckedIndices(checked);
-						tui.requestRender();
+					if (params.multiSelect && selectionIndex < params.options.length && matchesKey(data, "space")) {
+						toggleOption(selectionIndex);
 						return;
 					}
 					if (kb.matches(data, KEYBIND_CONFIRM)) {
@@ -264,6 +268,14 @@ async function askTuiQuestion(
 						editor.handleInput(data);
 						syncInputView();
 						tui.requestRender();
+						return;
+					}
+
+					// Digit shortcuts defer to Pi bindings and never target Other or Chat.
+					const optionIndex = OPTION_DIGIT_KEYS.findIndex(key => matchesKey(data, key));
+					if (optionIndex >= 0 && optionIndex < params.options.length) {
+						if (params.multiSelect) toggleOption(optionIndex);
+						else complete(mainItems[optionIndex]);
 					}
 				};
 				const fail = (error: unknown) => {
