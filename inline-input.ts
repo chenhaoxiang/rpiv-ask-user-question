@@ -8,6 +8,7 @@ export interface RenderInlineInputOptions {
 	rowPrefix: string;
 	continuationPrefix: string;
 	contentWidth: number;
+	maxRows?: number;
 	selectedText: (text: string) => string;
 }
 
@@ -27,9 +28,15 @@ function buildCursorRaw(buffer: string, offset: number): string {
 }
 
 export function renderInlineInputRow(opts: RenderInlineInputOptions): string[] {
-	const { buffer, cursorOffset, rowPrefix, continuationPrefix, contentWidth, selectedText } = opts;
+	const { buffer, cursorOffset, rowPrefix, continuationPrefix, contentWidth, maxRows, selectedText } = opts;
 	const raw = buildCursorRaw(buffer, resolveCursorOffset(buffer, cursorOffset));
-	return wrapTextWithAnsi(raw, contentWidth).map((segment, index) => {
+	const lines = wrapTextWithAnsi(raw, contentWidth);
+	// Scroll the visible slice with the editing cursor; a long pasted answer
+	// should not turn the inline input into an invisible, off-screen editor.
+	const rowLimit = maxRows === undefined ? lines.length : Math.max(1, maxRows);
+	const cursorRow = lines.findIndex(line => line.includes(CURSOR_MARKER));
+	const start = Math.max(0, cursorRow - rowLimit + 1);
+	return lines.slice(start, start + rowLimit).map((segment, index) => {
 		const prefix = index === 0 ? rowPrefix : continuationPrefix;
 		return selectedText(`${prefix}${segment}`);
 	});

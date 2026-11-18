@@ -1,5 +1,5 @@
 import type { ExtensionUIContext } from "@earendil-works/pi-coding-agent";
-import type { QuestionParams } from "./ask-user-question.js";
+import type { QuestionParams } from "./question-arguments.js";
 import type { WrappingSelectItem } from "./wrapping-select.js";
 
 type Choice = (WrappingSelectItem & { selectedIndices?: number[] }) | null;

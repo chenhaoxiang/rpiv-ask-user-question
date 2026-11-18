@@ -45,14 +45,15 @@ export async function questionHarness(options = {}) {
     if (options.registrationError) throw Error('observer registration unavailable');
     hooks.set(name, handler); return () => hooks.delete(name);
   }, events: { emit: (name, data) => { const value = JSON.parse(JSON.stringify(data)); events.push({ name, data: value }); options.onEvent?.(name, value); } } });
+  const terminal = { rows: options.terminalRows ?? 24, columns: options.terminalColumns ?? 80 };
   const ctx = { mode: "tui", hasUI: true, ui: {
     notify: (message, level) => notices.push({ message, level }),
     custom: factory => new Promise(resolve => {
       finish = resolve;
-      component = factory({ requestRender: () => renders++ }, theme, {}, resolve);
+      component = factory({ requestRender: () => renders++, terminal }, theme, {}, resolve);
     }),
   } };
   if (options.sessionId) ctx.sessionManager = { getSessionId: () => options.sessionId };
   hooks.get('session_start')?.({}, ctx);
-  return { tool, ctx, notices, events, hooks, get component() { return component; }, get renders() { return renders; }, finish: value => finish(value) };
+  return { tool, ctx, terminal, notices, events, hooks, get component() { return component; }, get renders() { return renders; }, finish: value => finish(value) };
 }

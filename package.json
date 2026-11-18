@@ -11,6 +11,7 @@
   "files": [
     "index.ts",
     "ask-user-question.ts",
+    "question-arguments.ts",
     "rpc-question.ts",
     "work-question-observer.ts",
     "inline-input.ts",

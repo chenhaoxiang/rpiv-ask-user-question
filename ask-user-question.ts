@@ -1,15 +1,18 @@
-import { type ExtensionAPI, DynamicBorder, type Theme } from "@earendil-works/pi-coding-agent";
-import { Container, Editor, Spacer, Text, getKeybindings, matchesKey } from "@earendil-works/pi-tui";
+import { type ExtensionAPI, type ExtensionContext, DynamicBorder, type Theme } from "@earendil-works/pi-coding-agent";
+import { Editor, getKeybindings, matchesKey, truncateToWidth, visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
+import { normalizeQuestionArguments, readQuestionText, type QuestionParams } from "./question-arguments.js";
 import { askRpcQuestion } from "./rpc-question.js";
-import { createWorkQuestionObserver, type WorkQuestionCloseReason } from "./work-question-observer.js";
+import { createWorkQuestionObserver, getNativeSessionId, type WorkQuestionCloseReason } from "./work-question-observer.js";
 import {
 	WrappingSelect,
 	type WrappingSelectItem,
 	type WrappingSelectTheme,
 } from "./wrapping-select.js";
 
-const MAX_VISIBLE_ROWS = 10;
+export type { QuestionParams } from "./question-arguments.js";
+
+const MAX_VISIBLE_ITEMS = 10;
 
 const TYPE_SOMETHING_LABEL = "Type something.";
 const CHAT_ABOUT_THIS_LABEL = "Chat about this";
@@ -21,25 +24,16 @@ const CHAT_ANSWER_TAG = "User wants to chat about this";
 const NO_INPUT_PLACEHOLDER = "(no input)";
 const ERROR_NO_UI = "Error: UI not available (running in non-interactive mode)";
 const ERROR_NO_OPTIONS = "Error: No options provided";
+const ERROR_INVALID_ARGUMENTS = "Error: Invalid question arguments";
+const CONCURRENT_QUESTION = "A question is already awaiting an answer; concurrent calls are not supported.";
 
 const KEYBIND_UP = "tui.select.up";
 const KEYBIND_DOWN = "tui.select.down";
 const KEYBIND_CONFIRM = "tui.select.confirm";
 const KEYBIND_CANCEL = "tui.select.cancel";
 
-interface QuestionOption {
-	label: string;
-	description?: string;
-}
-
-export interface QuestionParams {
-	question: string;
-	header?: string;
-	options: QuestionOption[];
-	multiSelect?: boolean;
-	workRef?: unknown;
-	stageId?: unknown;
-}
+type QuestionChoice = (WrappingSelectItem & { selectedIndices?: number[] }) | null;
+type QuestionObservation = ReturnType<ReturnType<typeof createWorkQuestionObserver>["begin"]>;
 
 interface ToolDetails {
 	question: string;
@@ -52,7 +46,7 @@ interface ToolDetails {
 }
 
 export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
-	let awaitingAnswer = false;
+	const awaitingQuestions = new Set<string | object>();
 	const workQuestions = createWorkQuestionObserver(pi);
 	const OptionSchema = Type.Object({
 		label: Type.String({ description: "Display label for the option" }),
@@ -61,6 +55,12 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 
 	pi.registerTool({
 		executionMode: "sequential",
+		exposure: "model-only",
+		prepareArguments(args) {
+			const params = normalizeQuestionArguments(args);
+			if (!params) throw new Error(ERROR_INVALID_ARGUMENTS);
+			return params;
+		},
 		name: "ask_user_question",
 		label: "Ask User Question",
 		description:
@@ -84,45 +84,85 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 			stageId: Type.Optional(Type.Unknown({ description: "Optional opaque work stage/phase with workRef. Observation only, not authorization or proof that a decision was applied." })),
 		}),
 
-		async execute(_toolCallId, params, signal, _onUpdate, ctx) {
-			if (signal?.aborted) return buildToolResult("Question cancelled", { question: params.question, answer: null });
-			const rpcUi = ctx.mode === "rpc" && typeof ctx.ui.select === "function" && typeof ctx.ui.input === "function";
-			if (!ctx.hasUI || (ctx.mode !== "tui" && !rpcUi)) return { ...buildToolResult(ERROR_NO_UI, { question: params.question, answer: null }), isError: true };
-			if (params.options.length === 0) return { ...buildToolResult(ERROR_NO_OPTIONS, { question: params.question, answer: null }), isError: true };
-			if (awaitingAnswer) throw new Error("A question is already awaiting an answer; concurrent calls are not supported.");
-			awaitingAnswer = true;
-			const observation = rpcUi ? undefined : workQuestions.begin(_toolCallId, params, ctx);
-			let closeReason: WorkQuestionCloseReason = "error";
-			try {
-			let choice: (WrappingSelectItem & { selectedIndices?: number[] }) | null;
-			if (rpcUi) {
-				choice = await askRpcQuestion(params, ctx.ui, signal);
-			} else {
-			const mainItems = buildMainItems(params.options);
-			const chatItems: WrappingSelectItem[] = [{ label: CHAT_ABOUT_THIS_LABEL, isChat: true }];
-			const totalCount = mainItems.length + chatItems.length;
+		async execute(toolCallId, rawParams, signal, _onUpdate, ctx) {
+			const params = normalizeQuestionArguments(rawParams);
+			const question = params?.question ?? readQuestionText(rawParams);
+			if (signal?.aborted) return buildToolResult("Question cancelled", { question, answer: null });
+			if (!params) return { ...buildToolResult(ERROR_INVALID_ARGUMENTS, { question, answer: null }), isError: true };
+			const ui = ctx.ui;
+			const rpcUi = ctx.mode === "rpc" && typeof ui.select === "function" && typeof ui.input === "function";
+			if (!ctx.hasUI || (ctx.mode !== "tui" && !rpcUi)) return { ...buildToolResult(ERROR_NO_UI, { question, answer: null }), isError: true };
+			if (params.options.length === 0) return { ...buildToolResult(ERROR_NO_OPTIONS, { question, answer: null }), isError: true };
 
-			let removeAbort = () => {};
-			let notified = false;
-			const emitInput = (phase: "start" | "end") => {
-				try { pi.events?.emit("pi:input-required", { version: 1, source: "ask_user_question", id: _toolCallId, phase }); }
-				catch { /* Optional observers must never change the question result. */ }
-			};
+			// Without a safe native id, use the exact standalone context;
+			// never guess from a shared session manager, UI, path, or display name.
+			const guardKey = getNativeSessionId(ctx) ?? ctx;
+			if (awaitingQuestions.has(guardKey)) throw new Error(CONCURRENT_QUESTION);
+			awaitingQuestions.add(guardKey);
+			let closeReason: WorkQuestionCloseReason = "error";
+			let observation: QuestionObservation = undefined;
 			try {
-			choice = await ctx.ui.custom<WrappingSelectItem & { selectedIndices?: number[] } | null>((tui, theme, _kb, done) => {
+				observation = rpcUi ? undefined : workQuestions.begin(toolCallId, params, ctx);
+				const choice = rpcUi
+					? await askRpcQuestion(params, ui, signal)
+					: await askTuiQuestion(pi, toolCallId, params, ui, signal, observation);
+				if (signal?.aborted) {
+					closeReason = "aborted";
+					return buildToolResult("Question cancelled", { question, answer: null });
+				}
+				const result = buildResponse(choice, params);
+				closeReason = result.details.wasChat ? "chat" : result.details.answer === null ? result.details.wasCustom ? "empty" : "declined" : "answered";
+				if (closeReason === "answered") observation?.answerReceived();
+				return result;
+			} finally {
+				awaitingQuestions.delete(guardKey);
+				observation?.closed(closeReason);
+			}
+		},
+	});
+}
+
+async function askTuiQuestion(
+	pi: ExtensionAPI,
+	toolCallId: string,
+	params: QuestionParams,
+	ui: ExtensionContext["ui"],
+	signal: AbortSignal | undefined,
+	observation: QuestionObservation,
+): Promise<QuestionChoice> {
+	const mainItems = buildMainItems(params.options);
+	const chatItems: WrappingSelectItem[] = [{ label: CHAT_ABOUT_THIS_LABEL, isChat: true }];
+	const totalCount = mainItems.length + chatItems.length;
+	let finished = false;
+	let notified = false;
+	let finish: ((choice: QuestionChoice) => void) | undefined;
+	let abort: (() => void) | undefined;
+	const emitInput = (phase: "start" | "end") => {
+		try { pi.events?.emit("pi:input-required", { version: 1, source: "ask_user_question", id: toolCallId, phase }); }
+		catch { /* Optional observers must never change the question result. */ }
+	};
+	try {
+		return await new Promise<QuestionChoice>((resolve, reject) => {
+			abort = () => {
+				finish?.(null);
+				finished = true;
+				resolve(null);
+			};
+			signal?.addEventListener("abort", abort, { once: true });
+			if (signal?.aborted) { abort(); return; }
+
+			ui.custom<QuestionChoice>((tui, theme, _kb, done) => {
+				// A delayed factory or input callback cannot reopen a settled call.
+				if (finished || notified) return { render: () => [], invalidate: () => {} };
+				const complete = (value: QuestionChoice) => {
+					if (finished) return;
+					finished = true;
+					try { done(value); } catch (error) { reject(error); }
+				};
+				finish = complete;
 				notified = true;
 				emitInput("start");
 				observation?.opened();
-				let finished = false;
-				const finish = (value: (WrappingSelectItem & { selectedIndices?: number[] }) | null) => {
-					if (finished) return;
-					finished = true;
-					done(value);
-				};
-				const abort = () => finish(null);
-				signal?.addEventListener("abort", abort, { once: true });
-				removeAbort = () => signal?.removeEventListener("abort", abort);
-				if (signal?.aborted) abort();
 				const checked = new Set<number>();
 				const selectTheme: WrappingSelectTheme = {
 					selectedText: (t) => theme.fg("accent", theme.bold(t)),
@@ -132,7 +172,7 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 
 				const mainList = new WrappingSelect(
 					mainItems,
-					Math.min(mainItems.length, MAX_VISIBLE_ROWS),
+					Math.min(mainItems.length, MAX_VISIBLE_ITEMS),
 					selectTheme,
 					{ totalItemsForNumbering: totalCount },
 				);
@@ -176,82 +216,82 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 				};
 				applySelection();
 
-				const container = buildDialogContainer(theme, params, mainList, chatList);
+				const render = buildDialog(theme, params, mainList, chatList);
 				if (params.multiSelect) mainList.setCheckedIndices(checked);
 
+				const handleInput = (data: string) => {
+					const currentItem = itemAt(selectionIndex, mainItems, chatItems);
+					const isInlineInputActive = !!currentItem?.isOther;
+					const kb = getKeybindings();
+
+					if (kb.matches(data, KEYBIND_UP)) {
+						selectionIndex = wrapIndex(selectionIndex - 1, totalCount);
+						applySelection();
+						tui.requestRender();
+						return;
+					}
+					if (kb.matches(data, KEYBIND_DOWN)) {
+						selectionIndex = wrapIndex(selectionIndex + 1, totalCount);
+						applySelection();
+						tui.requestRender();
+						return;
+					}
+					if (params.multiSelect && !isInlineInputActive && selectionIndex < params.options.length && matchesKey(data, "space")) {
+						if (checked.has(selectionIndex)) checked.delete(selectionIndex); else checked.add(selectionIndex);
+						mainList.setCheckedIndices(checked);
+						tui.requestRender();
+						return;
+					}
+					if (kb.matches(data, KEYBIND_CONFIRM)) {
+						if (isInlineInputActive) {
+							complete({ label: editor.getExpandedText?.() ?? editor.getText(), isOther: true });
+						} else if (currentItem?.isChat) {
+							complete(currentItem);
+						} else if (params.multiSelect) {
+							if (!checked.size) { ui.notify("Select at least one option with Space, or choose a custom answer or chat.", "warning"); return; }
+							const selectedIndices = [...checked].sort((a, b) => a - b);
+							complete({ label: selectedIndices.map(i => params.options[i].label).join("\n"), selectedIndices });
+						} else if (currentItem) {
+							complete(currentItem);
+						}
+						return;
+					}
+					if (kb.matches(data, KEYBIND_CANCEL)) {
+						complete(null);
+						return;
+					}
+					if (isInlineInputActive) {
+						editor.handleInput(data);
+						syncInputView();
+						tui.requestRender();
+					}
+				};
+				const fail = (error: unknown) => {
+					reject(error);
+					complete(null);
+				};
 				return {
-					render: (w) => container.render(w),
-					invalidate: () => container.invalidate(),
+					render: (width) => {
+						if (finished) return [];
+						try { return render(width, tui.terminal?.rows, selectionIndex >= mainItems.length); }
+						catch (error) { fail(error); return []; }
+					},
+					invalidate: () => {},
 					handleInput: (data) => {
 						if (finished) return;
-						const currentItem = itemAt(selectionIndex, mainItems, chatItems);
-						const isInlineInputActive = !!currentItem?.isOther;
-						const kb = getKeybindings();
-
-						if (kb.matches(data, KEYBIND_UP)) {
-							selectionIndex = wrapIndex(selectionIndex - 1, totalCount);
-							applySelection();
-							tui.requestRender();
-							return;
-						}
-						if (kb.matches(data, KEYBIND_DOWN)) {
-							selectionIndex = wrapIndex(selectionIndex + 1, totalCount);
-							applySelection();
-							tui.requestRender();
-							return;
-						}
-						if (params.multiSelect && !isInlineInputActive && selectionIndex < params.options.length && matchesKey(data, "space")) {
-							if (checked.has(selectionIndex)) checked.delete(selectionIndex); else checked.add(selectionIndex);
-							mainList.setCheckedIndices(checked);
-							tui.requestRender();
-							return;
-						}
-						if (kb.matches(data, KEYBIND_CONFIRM)) {
-							if (isInlineInputActive) {
-								finish({ label: editor.getExpandedText?.() ?? editor.getText(), isOther: true });
-							} else if (currentItem?.isChat) {
-								finish(currentItem);
-							} else if (params.multiSelect) {
-								if (!checked.size) { ctx.ui.notify("Select at least one option with Space, or choose a custom answer or chat.", "warning"); return; }
-								const selectedIndices = [...checked].sort((a, b) => a - b);
-								finish({ label: selectedIndices.map(i => params.options[i].label).join("\n"), selectedIndices });
-							} else if (currentItem) {
-								finish(currentItem);
-							}
-							return;
-						}
-						if (kb.matches(data, KEYBIND_CANCEL)) {
-							finish(null);
-							return;
-						}
-						if (isInlineInputActive) {
-							editor.handleInput(data);
-							syncInputView();
-							tui.requestRender();
-						}
+						try { handleInput(data); } catch (error) { fail(error); }
 					},
 				};
-			});
-			} finally {
-				removeAbort();
-				if (notified) emitInput("end");
-			}
-			}
-
-			if (signal?.aborted) {
-				closeReason = "aborted";
-				return buildToolResult("Question cancelled", { question: params.question, answer: null });
-			}
-			const result = buildResponse(choice, params);
-			closeReason = result.details.wasChat ? "chat" : result.details.answer === null ? result.details.wasCustom ? "empty" : "declined" : "answered";
-			if (closeReason === "answered") observation?.answerReceived();
-			return result;
-			} finally { awaitingAnswer = false; observation?.closed(closeReason); }
-		},
-	});
+			}).then(resolve, reject);
+		});
+	} finally {
+		finished = true;
+		if (abort) signal?.removeEventListener("abort", abort);
+		if (notified) emitInput("end");
+	}
 }
 
-function buildMainItems(options: QuestionOption[]): WrappingSelectItem[] {
+function buildMainItems(options: QuestionParams["options"]): WrappingSelectItem[] {
 	return [
 		...options.map((o) => ({ label: o.label, description: o.description })),
 		{ label: TYPE_SOMETHING_LABEL, isOther: true },
@@ -270,33 +310,41 @@ function wrapIndex(index: number, total: number): number {
 	return ((index % total) + total) % total;
 }
 
-function buildDialogContainer(
-	theme: Theme,
-	params: QuestionParams,
-	mainList: WrappingSelect,
-	chatList: WrappingSelect,
-): Container {
-	const container = new Container();
-	const border = () => new DynamicBorder((s: string) => theme.fg("accent", s));
+function buildDialog(theme: Theme, params: QuestionParams, mainList: WrappingSelect, chatList: WrappingSelect) {
+	const border = new DynamicBorder((s: string) => theme.fg("accent", s));
+	const instructions = params.multiSelect
+		? ["Space to toggle · Enter to submit checked options · ↑/↓ to navigate · Esc to cancel · Other/Chat are exclusive", "↑↓ Spc Enter Esc", "Spc ↵ Esc"]
+		: [NAV_HINT, "↑↓ Enter Esc", "Enter Esc", "↵ Esc"];
+	return (width: number, terminalRows: number | undefined, chatFocused: boolean): string[] => {
+		if (width < 1) return [];
+		// Leave room for Pi's own status/footer around the editor slot. On very
+		// short screens drop decoration first, then the unfocused option group.
+		const rows = terminalRows && Number.isFinite(terminalRows) && terminalRows > 0 ? Math.floor(terminalRows) : 24;
+		const budget = Math.max(Math.min(rows, 2), rows - 4);
+		const hint = instructions.find(text => visibleWidth(text) <= width) ?? instructions[instructions.length - 1];
+		const footer = theme.fg("dim", truncateToWidth(hint, width, ""));
+		if (budget === 1) return [footer];
 
-	container.addChild(border());
-	container.addChild(new Spacer(1));
-	if (params.header) {
-		container.addChild(new Text(theme.bg("selectedBg", ` ${params.header} `), 1, 0));
-		container.addChild(new Spacer(1));
-	}
-	container.addChild(new Text(theme.bold(params.question), 1, 0));
-	container.addChild(new Spacer(1));
-	container.addChild(mainList);
-	container.addChild(new Spacer(1));
-	container.addChild(border());
-	container.addChild(chatList);
-	container.addChild(new Spacer(1));
-	container.addChild(new Text(theme.fg("dim", params.multiSelect ? "Space to toggle · Enter to submit checked options · ↑/↓ to navigate · Esc to cancel · Other/Chat are exclusive" : NAV_HINT), 1, 0));
-	return container;
+		const showMain = budget >= 4 || !chatFocused;
+		const showChat = budget >= 4 || chatFocused;
+		const textBudget = budget - 1 - Number(showMain) - Number(showChat);
+		const wrap = (text: string, limit: number, style: (line: string) => string) => {
+			if (limit < 1) return [];
+			const lines = wrapTextWithAnsi(text, width);
+			if (lines.length > limit) lines[limit - 1] += "…";
+			return lines.slice(0, limit).map(line => style(truncateToWidth(line, width, "…")));
+		};
+		const question = wrap(params.question, Math.min(3, Math.ceil(textBudget / 2)), line => theme.bold(line));
+		const header = params.header ? wrap(params.header, Math.min(2, Math.floor(textBudget / 2)), line => theme.bg("selectedBg", line)) : [];
+		const borders = budget >= 12 ? border.render(width) : [];
+		const listBudget = budget - header.length - question.length - borders.length * 2 - 1;
+		const chat = showChat ? chatList.render(width, Math.min(2, listBudget - Number(showMain))) : [];
+		const main = showMain ? mainList.render(width, listBudget - chat.length) : [];
+		return [...borders, ...header, ...question, ...main, ...borders, ...chat, footer];
+	};
 }
 
-function buildResponse(choice: (WrappingSelectItem & { selectedIndices?: number[] }) | null, params: QuestionParams) {
+function buildResponse(choice: QuestionChoice, params: QuestionParams) {
 	if (!choice) {
 		return buildToolResult(DECLINE_MESSAGE, { question: params.question, answer: null });
 	}

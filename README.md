@@ -97,7 +97,7 @@ The separate `pi:work-question:v1` event carries native session/call identity, p
 
 ## Concurrent calls
 
-The tool requests sequential host execution. Unsupported direct/nested concurrent calls explicitly fail rather than replacing an active question. Answer, cancel, abort and UI errors release the guard; see [concurrency contract](docs/concurrent-questions.md).
+The tool requests sequential host execution and uses `model-only` exposure on Pi 1.5.2: the model can call it directly, but codemode cannot call it mid-script. A second question in the same native session fails rather than replacing the first. Independent session IDs do not block one another; see the [concurrency contract](docs/concurrent-questions.md) for cleanup and the missing-ID fallback. Long options are clipped to the terminal viewport; arrow navigation keeps the focused item and footer in view.
 
 ## Development
 

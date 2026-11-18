@@ -100,59 +100,59 @@ export class WrappingSelect implements Component {
 
 	invalidate(): void {}
 
-	render(width: number): string[] {
-		if (this.items.length === 0) return [];
+	render(width: number, maxRows = Infinity): string[] {
+		if (this.items.length === 0 || maxRows < 1) return [];
 
-		const { startIndex, endIndex } = this.computeVisibleWindow();
+		const half = Math.floor(this.maxVisible / 2);
+		const start = Math.max(0, Math.min(this.selectedIndex - half, this.items.length - this.maxVisible));
+		const end = Math.min(start + this.maxVisible, this.items.length);
 		const numberWidth = String(this.totalItemsForNumbering).length;
-		const lines: string[] = [];
+		const render = (index: number, budget: number) => this.renderItem(index, width, numberWidth, budget);
 
-		for (let i = startIndex; i < endIndex; i++) {
-			const item = this.items[i];
-			if (!item) continue;
-			const isActive = i === this.selectedIndex && this.focused;
-			lines.push(...this.renderItem(item, i, isActive, width, numberWidth));
+		// Start with the focused item, then grow a contiguous window around it.
+		// A long description in a neighboring item cannot push the focus away.
+		let first = this.selectedIndex, last = this.selectedIndex;
+		const selected = render(this.selectedIndex, maxRows);
+		let remaining = maxRows - selected.length;
+		const before: string[][] = [], after: string[][] = [];
+		while (remaining > 0 && (first > start || last + 1 < end)) {
+			const takeNext = last + 1 < end && (first === start || last - this.selectedIndex <= this.selectedIndex - first);
+			const rows = takeNext ? render(++last, remaining) : render(--first, remaining);
+			(takeNext ? after : before).push(rows);
+			remaining -= rows.length;
 		}
-
-		if (this.hasItemsOutsideWindow(startIndex, endIndex)) {
+		const lines = [...before.reverse().flat(), ...selected, ...after.flat()];
+		if (remaining > 0 && (first > 0 || last + 1 < this.items.length)) {
 			lines.push(this.theme.scrollInfo(`  (${this.selectedIndex + 1}/${this.items.length})`));
 		}
-		return lines.map(line => truncateToWidth(line, Math.max(0, width)));
+		return lines.map(line => truncateToWidth(line, width, ""));
 	}
 
-	private computeVisibleWindow(): { startIndex: number; endIndex: number } {
-		const half = Math.floor(this.maxVisible / 2);
-		const startIndex = Math.max(
-			0,
-			Math.min(this.selectedIndex - half, this.items.length - this.maxVisible),
-		);
-		const endIndex = Math.min(startIndex + this.maxVisible, this.items.length);
-		return { startIndex, endIndex };
-	}
-
-	private hasItemsOutsideWindow(startIndex: number, endIndex: number): boolean {
-		return startIndex > 0 || endIndex < this.items.length;
-	}
-
-	private renderItem(
-		item: WrappingSelectItem,
-		index: number,
-		isActive: boolean,
-		width: number,
-		numberWidth: number,
-	): string[] {
-		const rowPrefix = this.buildRowPrefix(index, isActive, numberWidth);
+	private renderItem(index: number, width: number, numberWidth: number, maxRows: number): string[] {
+		const item = this.items[index];
+		const isActive = index === this.selectedIndex && this.focused;
+		const prefix = this.buildRowPrefix(index, isActive, numberWidth);
+		// Keep the focus pointer and some label text even if the full ordinal and
+		// checkbox prefix do not fit. The unabridged prefix returns on resize.
+		const rowPrefix = visibleWidth(prefix) + 2 <= width ? prefix : isActive ? "❯" : " ";
 		const continuationPrefix = " ".repeat(visibleWidth(rowPrefix));
 		const contentWidth = Math.max(WrappingSelect.MIN_CONTENT_WIDTH, width - visibleWidth(rowPrefix));
 
 		if (this.shouldRenderAsInlineInput(item, isActive)) {
-			return this.renderInlineInputRow(rowPrefix, continuationPrefix, contentWidth);
+			return this.renderInlineInputRow(rowPrefix, continuationPrefix, contentWidth, maxRows);
 		}
 
-		return [
-			...this.renderLabelBlock(item.label, rowPrefix, continuationPrefix, contentWidth, isActive),
-			...this.renderDescriptionBlock(item.description, continuationPrefix, contentWidth),
-		];
+		const label = this.renderLabelBlock(item.label, rowPrefix, continuationPrefix, contentWidth, isActive);
+		const lines = label.length >= maxRows
+			? label
+			: [...label, ...this.renderDescriptionBlock(item.description, continuationPrefix, contentWidth)];
+		const visible = lines.slice(0, maxRows);
+		if (lines.length > maxRows || (label.length >= maxRows && item.description)) {
+			const last = visible.length - 1;
+			// Do not let the ellipsis replace the focus pointer at width one.
+			if (width > 1) visible[last] = truncateToWidth(visible[last] + "…", width, "…");
+		}
+		return visible;
 	}
 
 	private buildRowPrefix(index: number, isActive: boolean, numberWidth: number): string {
@@ -169,13 +169,14 @@ export class WrappingSelect implements Component {
 		return !!item.isOther && isActive;
 	}
 
-	private renderInlineInputRow(rowPrefix: string, continuationPrefix: string, contentWidth: number): string[] {
+	private renderInlineInputRow(rowPrefix: string, continuationPrefix: string, contentWidth: number, maxRows: number): string[] {
 		return renderInlineInput({
 			buffer: this.inputBuffer,
 			cursorOffset: this.inputCursorOffset,
 			rowPrefix,
 			continuationPrefix,
 			contentWidth,
+			maxRows,
 			selectedText: this.theme.selectedText,
 		});
 	}

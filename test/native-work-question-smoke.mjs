@@ -24,6 +24,9 @@ let sdkPromptCalls=0;session.prompt=async()=>{sdkPromptCalls++;throw Error('SDK 
 const errors=[];try{
  await session.bindExtensions({mode:'tui',uiContext,onError:e=>errors.push(e)});
  const tool=session.agent.state.tools.find(t=>t.name==='ask_user_question');assert.ok(tool);
+ assert.equal(session.getAllTools().find(t=>t.name==='ask_user_question')?.exposure,'model-only');
+ assert.ok(session.getActiveToolNames().includes('ask_user_question'));assert.ok(!session.getCallableToolNames().includes('ask_user_question'));
+ assert.deepEqual(tool.prepareArguments({question:'A\r\nB',options:'[{"label":"C"}]'}),{question:'A\nB',options:[{label:'C'}]});
  const input={question:'PRIVATE_QUESTION',options:[{label:'PRIVATE_OPTION'}],workRef:{owner:'example/owner',kind:'task',key:'native-case'},stageId:'design'};
  const pending=tool.execute('call_1|fc_2/1',input,new AbortController().signal);assert.ok(component);assert.equal(observations.length,1);assert.equal(observations[0].phase,'opened');
  finish({label:'PRIVATE_OPTION'});const result=await pending;assert.equal(result.details.answer,'PRIVATE_OPTION');
@@ -41,5 +44,5 @@ const errors=[];try{
  const newTool=session.agent.state.tools.find(t=>t.name==='ask_user_question');assert.ok(newTool);
  const afterReload=newTool.execute('reload-new',input,new AbortController().signal);assert.notEqual(observations.at(-1).epoch,oldEpoch);assert.equal(observations.at(-1).seq,1);finish(null);await afterReload;
  const bytes=JSON.stringify(observations);for(const secret of ['PRIVATE_QUESTION','PRIVATE_OPTION',root])assert.ok(!bytes.includes(secret));assert.equal(providerCalls,0);assert.equal(sdkPromptCalls,0);assert.deepEqual(errors,[]);
- console.log(JSON.stringify({sdk:JSON.parse(await readFile(join(sdk,'package.json'),'utf8')).version,actualExtensionFactory:true,syntheticUI:true,workEvents:observations.length,legacyEvents:legacy.length,nativeIdentity:true,persistentSessionIdentity:!!manager.getSessionFile(),nativeTreeAndReloadFences:true,providerCalls,sdkPromptCalls}));
+ console.log(JSON.stringify({sdk:JSON.parse(await readFile(join(sdk,'package.json'),'utf8')).version,actualExtensionFactory:true,modelOnly:true,nativeArgumentPreparation:true,syntheticUI:true,workEvents:observations.length,legacyEvents:legacy.length,nativeIdentity:true,persistentSessionIdentity:!!manager.getSessionFile(),nativeTreeAndReloadFences:true,providerCalls,sdkPromptCalls}));
 }finally{session.dispose()}
