@@ -38,7 +38,7 @@ function association(params: unknown): Association {
     || (stage !== undefined && !identifier(stage))) return unavailable;
   return Object.freeze({ workAssociation: "declared", workRef: Object.freeze({ owner, kind: kind as WorkRef["kind"], key }), stageId: typeof stage === "string" ? stage : null });
 }
-function nativeSession(ctx: ExtensionContext): string | undefined {
+export function getNativeSessionId(ctx: ExtensionContext): string | undefined {
   try { const id = ctx.sessionManager.getSessionId(); return identifier(id) ? id : undefined; } catch { return undefined; }
 }
 
@@ -51,7 +51,7 @@ export function createWorkQuestionObserver(pi: ExtensionAPI) {
     const startScope = (_event: unknown, ctx: ExtensionContext) => {
       if (disabled) return;
       live = false;
-      try { epoch = randomUUID(); sequence = 0; sessionId = nativeSession(ctx); live = true; } catch { epoch = ""; }
+      try { epoch = randomUUID(); sequence = 0; sessionId = getNativeSessionId(ctx); live = true; } catch { epoch = ""; }
     };
     subscriptions.push(pi.on("session_start", startScope));
     subscriptions.push(pi.on("session_tree", startScope));
@@ -63,7 +63,7 @@ export function createWorkQuestionObserver(pi: ExtensionAPI) {
   return Object.freeze({
     begin(toolCallId: string, params: unknown, ctx: ExtensionContext) {
       try {
-        const id = nativeSession(ctx), capturedEpoch = epoch;
+        const id = getNativeSessionId(ctx), capturedEpoch = epoch;
         if (!live || !id || id !== sessionId || !callId(toolCallId)) return undefined;
         const context = association(params); let opened = false, answered = false, closed = false;
         const emit = (phase: "opened" | "answer-received" | "closed", closeReason: WorkQuestionCloseReason | null = null) => {
